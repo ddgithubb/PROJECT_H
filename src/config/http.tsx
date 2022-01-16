@@ -1,7 +1,7 @@
 import * as FD from "form-data";
 import { getState, GlobalState } from "../store/Store";
 
-const DOMAIN: string = "10.0.0.18:9000"; //10.217.70.188:9000
+const DOMAIN: string = "10.0.0.18:8000"; //10.217.70.188:8000
 const VERSION: string = "v1";
 const HOST: string = "http://" + DOMAIN;
 const WSHOST: string = "ws://" + DOMAIN + "/stream";

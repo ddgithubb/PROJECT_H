@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { Chain, ChainContainer, UserState } from "../../models/User.model";
-import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH, MAX_VIRTUAL_CHAIN_LENGTH, DEFAULT_LEFT_PLACEHOLDER_PADDING, INITIAL_LEFT_PADDING, MESSAGE_MAX_WIDTH, MESSAGE_SPACER, DATE_INDICATOR_WIDTH, CHAIN_METERS_WIDTH  } from '../../config/constants';
+import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH, MAX_VIRTUAL_CHAIN_LENGTH, DEFAULT_LEFT_PLACEHOLDER_PADDING, MESSAGE_MAX_WIDTH, MESSAGE_SPACER, DATE_INDICATOR_WIDTH, CHAIN_METERS_WIDTH  } from '../../config/constants';
 import { MESSAGES_TO_LOAD, NO_LAST_SEEN_OFFSET } from "../../services/Chat-activator.service";
 import { HALF_PIXEL_WIDTH, PIXEL_WIDTH } from "../../config/dimensions";
 import { calcDaysApart } from "../../services/Time.service";
@@ -113,10 +113,8 @@ const userSlice = createSlice({
             state.curChainsIndex.push(payload.index);
             let chain = state.chains[payload.index] = { 
                 virtualizedChain: [], 
-                newestChain: parseAscChain(payload.chain).chain, 
+                newestChain: parseChain(payload.chain, 1, Date.now()), 
                 spaceBetween: 0, 
-                attached: true,
-                leftPadding: INITIAL_LEFT_PADDING,
                 isNewest: false,
                 virtualIndex: 0,
                 initOffset: -1,
@@ -132,7 +130,6 @@ const userSlice = createSlice({
                 }
             }
             if (chain.initOffset == -1) {
-                chain.initOffset = chain.leftPadding + NO_LAST_SEEN_OFFSET;
                 for (let i = 0; i < chain.newestChain.length; i++) { 
                     if (chain.newestChain[i].offset + chain.newestChain[i].totalWidth > chain.initOffset + HALF_PIXEL_WIDTH) {
                         chain.virtualIndex = i;
@@ -228,15 +225,44 @@ const userSlice = createSlice({
                 }
             }
         },
+        addDescExtraChain(state, { payload }) {
+            let chain = state.chains[payload.index];
+            if (!payload.chain) {
+                (chain.virtualizedChain[0] || chain.newestChain[0]).first = true;
+                return 
+            };
+
+            let chainPayload = 
+                parseChain(
+                    payload.chain, 
+                    MESSAGES_TO_LOAD - (payload.chain.length % MESSAGES_TO_LOAD) + (chain.virtualizedChain[0] || chain.newestChain[0]).key, 
+                    (chain.virtualizedChain[0] || chain.newestChain[0]).Created
+                );
+
+            let diff = chain.virtualizedChain.unshift(...chainPayload) - MAX_VIRTUAL_CHAIN_LENGTH;
+            chain.virtualIndex += chainPayload.length;
+
+            if (diff > 0) {
+                chain.virtualizedChain.splice(-diff, diff);
+                chain.spaceBetween += diff;
+            }
+
+            if (payload.chain.length < EXTRA_CHAIN_LENGTH) {
+                chain.virtualizedChain[0].first = true;
+            }
+
+            calculateOffset(chain);
+        },
         addAscExtraChain(state, { payload }) {
             let chain = state.chains[payload.index];
             if (!chain || !payload.chain) return;
 
-            let chainPayload = parseAscChain(
-                                    payload.chain, 
-                                    chain.virtualizedChain[chain.virtualizedChain.length - 1], 
-                                    payload.chain.length < EXTRA_CHAIN_LENGTH ? chain.newestChain[0] : undefined
-                                ).chain;
+            let chainPayload = 
+                parseChain(
+                    payload.chain, 
+                    chain.virtualizedChain[chain.virtualizedChain.length - 1].key + 1,
+                    payload.chain.length < EXTRA_CHAIN_LENGTH ? chain.newestChain[0].Created : undefined,
+                );
 
             let lastMessage = chain.virtualizedChain[chain.virtualizedChain.length - 1];
             if (calcDaysApart(lastMessage.Created, chainPayload[0].Created) > 0) {
@@ -246,59 +272,22 @@ const userSlice = createSlice({
 
             let diff = chain.virtualizedChain.push(...chainPayload) - MAX_VIRTUAL_CHAIN_LENGTH;
             if (diff > 0) {
-                let deleted = chain.virtualizedChain.splice(0, diff);
-                let deletedTotalWidth = 0;
-                for (let i = 0; i < deleted.length; i++) {
-                    deletedTotalWidth += deleted[i].totalWidth;
-                }
-                chain.leftPadding += deletedTotalWidth
-                chain.virtualIndex -= deleted.length;
+                chain.virtualizedChain.splice(0, diff);
+                chain.virtualIndex -= diff;
             }
             
             chain.spaceBetween -= payload.chain.length;
             if (chain.spaceBetween <= 0) {
                 chain.spaceBetween = 0;
-                chain.attached = true;
-            }
-        },
-        addDescExtraChain(state, { payload }) {
-            let chain = state.chains[payload.index];
-            if (!payload.chain) { 
-                if (chain.virtualizedChain[0]) {
-                    setNewPadding(0, chain.virtualizedChain[0].offset, chain);
-                    chain.virtualizedChain[0].first = true;
-                } else {
-                    setNewPadding(0, chain.newestChain[0].offset, chain);
-                    chain.newestChain[0].first = true;
-                }
-                return 
-            };
-
-            let diff = chain.virtualizedChain.unshift(...payload.chain) - MAX_VIRTUAL_CHAIN_LENGTH;
-            chain.virtualIndex += payload.chain.length;
-
-            if (diff > 0) {
-                chain.virtualizedChain.splice(-diff, diff);
-                chain.spaceBetween += diff;
-                chain.attached = false;
             }
 
-            if (payload.chain.length < EXTRA_CHAIN_LENGTH) {
-                setNewPadding(0, chain.virtualizedChain[0].offset, chain);
-                chain.virtualizedChain[0].first = true;
-            } else if (payload.totalWidth <= chain.leftPadding - DEFAULT_LEFT_PLACEHOLDER_PADDING) {
-                chain.leftPadding -= payload.totalWidth;
-            } else {
-                setNewPadding(INITIAL_LEFT_PADDING, chain.virtualizedChain[0].offset, chain);
-            }
+            calculateOffset(chain);
         },
         goToNewest(state, { payload }) {
             let chain = state.chains[payload.index];
-            if (!chain.attached) {
+            if (chain.spaceBetween != 0) {
                 chain.isNewest = true;
                 chain.virtualizedChain = [];
-                chain.leftPadding = chain.newestChain[0].offset;
-                chain.attached = true;
                 chain.spaceBetween = 0;
                 chain.virtualIndex = chain.newestChain.length - 1;
             }
@@ -312,15 +301,13 @@ const userSlice = createSlice({
     }
 });
 
-export function parseAscChain(chain: any[], leftObject?: Chain , rightObject?: Chain): { chain: Chain[], totalWidth: number } {
+export function parseChain(chain: any[], startKey: number, nextCreated?: number): Chain[] {
     let tempChain: Chain[] = [];
-    let startOffset = leftObject ? leftObject.offset + leftObject.totalWidth : INITIAL_LEFT_PADDING;
-    let startKey = leftObject ? leftObject.key + 1 : 1;
     let totalNewWidth = 0;
+    let startOffset = 0;
     let display;
     let width;
     let daysApart;
-    let nextCreated;
     let bytes: number[];
     for (let i = 0; i < chain.length; i++) {
         display = chain[i].Display as string
@@ -328,10 +315,8 @@ export function parseAscChain(chain: any[], leftObject?: Chain , rightObject?: C
         for (let j = 0; j < display.length; j++) {
             bytes[j] = display.charCodeAt(j);
         }
-        if (startKey > MESSAGES_TO_LOAD) {
-            startKey = 1;
-        }
-        nextCreated = chain[i + 1]?.Created || (rightObject ? rightObject.Created : Date.now());
+        if (startKey > MESSAGES_TO_LOAD) startKey = startKey - MESSAGES_TO_LOAD;
+        nextCreated = chain[i + 1]?.Created || (nextCreated || chain[i].Created);
         daysApart = calcDaysApart(chain[i].Created, nextCreated);
         width = calculateAudioWidth(bytes.length) + (daysApart > 0 ? DATE_INDICATOR_WIDTH : 0);
         tempChain.push({
@@ -350,49 +335,7 @@ export function parseAscChain(chain: any[], leftObject?: Chain , rightObject?: C
         startKey++;
         totalNewWidth += width;
     }
-    //console.log(tempChain);
-    return { chain: tempChain, totalWidth: totalNewWidth };
-}
-
-export function parseDescChain(chain: any[], rightObject: Chain): { chain: Chain[], totalWidth: number } {
-    let tempChain: Chain[] = [];
-    let startOffset = rightObject.offset;
-    let startKey = rightObject.key - 1;
-    let totalNewWidth = 0;
-    let display;
-    let width;
-    let daysApart;
-    let nextCreated;
-    let bytes: number[];
-    for (let i = chain.length - 1; i >= 0; i--) {
-        display = chain[i].Display as string
-        bytes = [];
-        for (let j = 0; j < display.length; j++) {
-            bytes[j] = display.charCodeAt(j);
-        }
-        if (startKey < 1) {
-            startKey = MESSAGES_TO_LOAD
-        }
-        nextCreated = chain[i + 1]?.Created || (rightObject ? rightObject.Created : Date.now());
-        daysApart = calcDaysApart(chain[i].Created, nextCreated);
-        width = calculateAudioWidth(bytes.length) + (daysApart > 0 ? DATE_INDICATOR_WIDTH : 0);
-        totalNewWidth += width;
-        tempChain.unshift({
-            MessageID: chain[i].MessageID,
-            UserID: chain[i].UserID,
-            Created: chain[i].Created,
-            Duration: chain[i].Duration,
-            Display: bytes,
-            Seen: chain[i].Seen,
-            Action: chain[i].Action,
-            totalWidth: width,
-            offset: startOffset - totalNewWidth,
-            key: startKey,
-            dateIndicator: daysApart > 0 ? nextCreated : undefined
-        });
-        startKey--;
-    }
-    return { chain: tempChain, totalWidth: totalNewWidth };
+    return tempChain;
 }
 
 function pushMessage(chain: ChainContainer, payload: any) {
@@ -418,24 +361,27 @@ function pushMessage(chain: ChainContainer, payload: any) {
         Seen: payload.chain.Seen,
         Action: payload.chain.Action,
         totalWidth: calculateAudioWidth(bytes.length),
-        offset: chain.newestChain.length > 0 ? chain.newestChain[chain.newestChain.length - 1].offset + chain.newestChain[chain.newestChain.length - 1].totalWidth : chain.leftPadding,
+        offset: 0,
         key: (key > MESSAGES_TO_LOAD ? 1 : key),
     });
-    checkMaxSavedChain(length, chain);
+    
+    if (length > MAX_SAVED_CHAIN_LENGTH) {
+        chain.newestChain.shift()!;
+        if (chain.spaceBetween != 0) chain.spaceBetween++;
+        calculateOffset(chain);
+    }
 }
 
-function checkMaxSavedChain(scLength: number, chain: ChainContainer) {
-    if (scLength > MAX_SAVED_CHAIN_LENGTH) {
-        let shifted = chain.newestChain.shift()!;
-        if (chain.attached) {
-            chain.virtualizedChain.push(shifted);
-            if (chain.virtualizedChain.length > EXTRA_CHAIN_LENGTH) {
-                shifted = chain.virtualizedChain.shift()!;
-                if (chain.virtualIndex > 0) {
-                    chain.virtualIndex -= 1;
-                }
-                chain.leftPadding += shifted.totalWidth;
-            }
+function calculateOffset(chain: ChainContainer) {
+    let tempOffset = 0;
+    let vcLength = chain.virtualizedChain.length;
+    for (let i = 0; i < vcLength + (chain.spaceBetween == 0 ? chain.newestChain.length : 0); i++) {
+        if (i >= vcLength) {
+            chain.newestChain[i - vcLength].offset = tempOffset;
+            tempOffset += chain.newestChain[i - vcLength].totalWidth;
+        } else {
+            chain.virtualizedChain[i].offset = tempOffset;
+            tempOffset += chain.virtualizedChain[i].totalWidth;
         }
     }
 }
@@ -445,17 +391,6 @@ function calculateAudioWidth(aryLength: number) {
     width = Math.min(width, MESSAGE_MAX_WIDTH);
     width += MESSAGE_SPACER;
     return width;
-}
-
-function setNewPadding(newPadding: number, prevPadding: number, chain: ChainContainer) {
-    let diff = newPadding - prevPadding;
-    chain.leftPadding = newPadding;
-    for (const message of chain.virtualizedChain) {
-        message.offset += diff;
-    } 
-    for (const message of chain.newestChain) {
-        message.offset += diff;
-    }
 }
 
 export const userReducers = userSlice.reducer;

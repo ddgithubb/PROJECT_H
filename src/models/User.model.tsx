@@ -16,8 +16,6 @@ export interface ChainContainer {
     newestChain: Chain[];
     virtualizedChain: Chain[];
     spaceBetween: number;
-    attached: boolean;
-    leftPadding: number;
     isNewest: boolean;
     virtualIndex: number;
     initOffset: number;

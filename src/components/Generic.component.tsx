@@ -59,7 +59,7 @@ export function ContainerView(props: View['props']) {
 
 export const Header = memo((props: View['props']) => {
     const { style, ...otherProps } = props;
-    return <View style={[{ width: "100%", height: 70, flexDirection: "row", flexWrap: "nowrap", marginBottom: 5 }, style]} {...otherProps} />
+    return <View style={[{ width: "100%", height: 70, flexDirection: "row", flexWrap: "nowrap" }, style]} {...otherProps} />
 });
 
 export function HeaderViews(props: View['props']) {

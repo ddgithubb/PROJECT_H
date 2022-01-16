@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Animated, View } from 'react-native';
 import { Icon, Subtitle } from '../../../../components/Generic.component';
 import { PIXEL_WIDTH, HALF_PIXEL_WIDTH } from '../../../../config/dimensions';
-import { Chain, Friend } from '../../../../models/User.model';
+import { Friend } from '../../../../models/User.model';
 import { memo } from 'react';
 import { getState, GlobalState } from '../../../../store/Store';
-import { ScrollView, TouchableHighlight } from 'react-native-gesture-handler';
+import { TouchableHighlight } from 'react-native-gesture-handler';
+import ScrollView from '../../../../components/InfiniteHorizontalScrollView/ScrollView';
 import { useDispatch, useSelector } from 'react-redux';
 import { AudioResponse } from './AudioResponse';
-import { MESSAGE_MAX_WIDTH, GET_EXTRA_THRESHOLD, MESSAGE_HEIGHT, MESSAGE_SPACER, DEFAULT_LEFT_PLACEHOLDER_PADDING, NEGATIVE_TRESHOLD_LIMIT, INITIAL_LEFT_PADDING, STATIC_ACTIVATOR_HEIGHT } from '../../../../config/constants';
+import { GET_EXTRA_THRESHOLD, MESSAGE_SPACER, DEFAULT_LEFT_PLACEHOLDER_PADDING } from '../../../../config/constants';
 import { getExtraChain } from '../../../../services/Chains.service';
-import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH } from '../../../../config/constants';
-import { somethingWrong } from '../../../../services/Errors.service';
+import { EXTRA_CHAIN_LENGTH } from '../../../../config/constants';
 import { PlaceholderGenerator } from './PlaceholderGenerator';
-import { userActions, parseAscChain, parseDescChain } from '../../../../store/slices/User.slice';
+import { userActions } from '../../../../store/slices/User.slice';
 import { MESSAGES_LOAD_LEFT, MESSAGES_LOAD_RIGHT, MESSAGES_TO_LOAD } from '../../../../services/Chat-activator.service';
 import { BACK_RESOURCE } from '../../../../services/Resource.service';
 
@@ -22,25 +22,21 @@ var chainOffsets: (number | undefined)[] = [];
 var curFriend: Friend | undefined = undefined;
 var thresholdLeft: boolean;
 var thresholdRight: boolean;
-var prevLeftPadding: number;
 var curLength: number;
 var initialized = true;
-var leftRes: any = undefined;
-var goToOffset: number | undefined = undefined;
-var requireFullStop: boolean;
-var loading: boolean;
 var curObject;
-var curOffset: number;
+var tempOffset: number;
 var tempIndex: number;
 var scrolledToEnd: boolean;
 var toNewest: boolean;
+var leftPadding: number;
 
 export const ChainDisplay = memo(() => {
     const currentIndex = useSelector(({ user }: GlobalState) => user.currentUserKey);
     const chain = useSelector(({ user }: GlobalState) => user.chains[currentIndex]);
     const audioState = useSelector(({ audio }: GlobalState) => audio);
-    const [ disableScroll, setDisableScroll ] = useState(false);
     const chainRef = useRef<any>();
+    const [ disabled, setDisabled ] = useState(false);
     const isNewestAnimation = useRef<Animated.Value>(new Animated.Value(70)).current;
     const dispatch = useDispatch();
 
@@ -48,47 +44,13 @@ export const ChainDisplay = memo(() => {
         console.log("TRIGGERED CURRENT INDEX");
         thresholdRight = false;
         thresholdLeft = false;
-        prevLeftPadding = 0;
         curLength = -1;
         initialized = false;
-        leftRes = undefined;
-        goToOffset = undefined;
-        requireFullStop = false;
-        loading = false;
         scrolledToEnd = false;
         toNewest = false;
+        leftPadding = 0;
         curFriend = getState().user.relations.Friends[currentIndex];
     }, [currentIndex]);
-
-    useEffect(() => {
-        if (!chain) return;
-        if (thresholdLeft && chain.leftPadding != prevLeftPadding && (!chain.attached || (chain.attached && leftRes && getVirtualLength() - curLength == leftRes.chain.length))) {
-            if (requireFullStop && disableScroll) {
-                goToOffset = (chain.virtualizedChain[leftRes.chain.length] || chain.newestChain[leftRes.chain.length]).offset + (chainOffsets[currentIndex]! - (prevLeftPadding));
-            } else if (!requireFullStop) {
-                thresholdLeft = false;
-                if (disableScroll) setDisableScroll(false);
-            }
-            leftRes = undefined;
-        }
-        console.log("virtual index:", chain.virtualIndex, chain.leftPadding, prevLeftPadding)
-        prevLeftPadding = chain.leftPadding;
-        curLength = getVirtualLength();
-    }, [chain]);
-
-    useEffect(() => {
-        if (disableScroll) {
-            chainRef.current.scrollTo({ x: chainOffsets[currentIndex]!, y: 0, animated: true });
-            console.log("DISABLE SCROLL HIT: ", disableScroll, requireFullStop);
-            if (requireFullStop && leftRes) {
-                prependChain();
-            } else {
-                loading = true;
-            }
-        } else {
-            loading = false;
-        }
-    }, [disableScroll]);
 
     useEffect(() => {
         if (chain?.isNewest) scrolledToEnd = true;
@@ -115,7 +77,7 @@ export const ChainDisplay = memo(() => {
     }, [chain?.isNewest]);
 
     const updateScrollPosition = () => { 
-        console.log("updated", chain.isNewest);
+        //console.log("updated", chain.isNewest);
         if (!initialized && chain.newestChain.length > 0) {
             initialized = true;
             console.log(chain.initOffset);
@@ -131,55 +93,46 @@ export const ChainDisplay = memo(() => {
             toNewest = false;
             return;
         }
-        if (thresholdLeft && goToOffset) {
-            chainRef.current.scrollTo({x: goToOffset, y: 0, animated: false});
+        if (thresholdLeft || thresholdRight) {
             thresholdLeft = false;
-            goToOffset = undefined;
-            console.log("UNLOADING!!!");
-            setDisableScroll(false);
-        } else if (thresholdRight) {
             thresholdRight = false;
+            setDisabled(false);
         }
     }
 
     const onScroll = ({ nativeEvent }: any) => {
         //console.log("velocity", nativeEvent.velocity.x, "offset", nativeEvent.contentOffset.x, "width", nativeEvent.contentSize.width );
         chainOffsets[currentIndex] = nativeEvent.contentOffset.x;
-        if (thresholdLeft && !disableScroll && (nativeEvent.contentOffset.x <= chain.leftPadding - NEGATIVE_TRESHOLD_LIMIT || nativeEvent.contentOffset.x == 0)) {
-            console.log("Disabling scroll")
-            setDisableScroll(true);
-            return;
-        }
-        if (!disableScroll) {
+        if (!thresholdLeft && !thresholdRight) {
+            curLength = getVirtualLength();
             curObject = getItemByVirtualIndex(chain.virtualIndex);
-            curOffset = curObject.offset;
+            leftPadding = !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? DEFAULT_LEFT_PLACEHOLDER_PADDING : 0;
+            tempOffset = curObject.offset + leftPadding;
             tempIndex = chain.virtualIndex;
-            if (tempIndex > 0 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH < curOffset) {
+            if (tempIndex > 0 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH < tempOffset) {
                 do {
-                    //console.log("desc calc new VI:", nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH, curOffset);
+                    //console.log("desc calc new VI:", nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH, tempOffset);
                     tempIndex--;
-                    curOffset -= getItemByVirtualIndex(tempIndex).totalWidth;
-                } while(tempIndex > 0 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH < curOffset);
+                    tempOffset -= getItemByVirtualIndex(tempIndex).totalWidth;
+                } while(tempIndex > 0 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH < tempOffset);
                 //console.log("NEW VIRTUAL INDEX:", tempIndex);
                 dispatch(userActions.setVirtualIndex({ index: currentIndex, virtualIndex: tempIndex }));
-            } else if (tempIndex < curLength - 1 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH >= curOffset + curObject.totalWidth) {
+            } else if (tempIndex < curLength - 1 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH >= tempOffset + curObject.totalWidth) {
                 do {
-                    //console.log("asc calc new VI:", nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH, curOffset);
-                    curOffset += getItemByVirtualIndex(tempIndex).totalWidth;
+                    //console.log("asc calc new VI:", nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH, tempOffset);
+                    tempOffset += getItemByVirtualIndex(tempIndex).totalWidth;
                     tempIndex++;
-                } while (tempIndex < curLength - 1 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH >= curOffset + curObject.totalWidth);
+                } while (tempIndex < curLength - 1 && nativeEvent.contentOffset.x + HALF_PIXEL_WIDTH >= tempOffset + curObject.totalWidth);
                 //console.log("NEW VIRTUAL INDEX:", tempIndex);
                 dispatch(userActions.setVirtualIndex({ index: currentIndex, virtualIndex: tempIndex }));
             }
-        }
-        if (!chain.newestChain[0].first && !thresholdLeft && !thresholdRight) {
-            if (nativeEvent.contentOffset.x <= GET_EXTRA_THRESHOLD + chain.leftPadding) {
+            if (nativeEvent.contentOffset.x == 0) { //nativeEvent.contentOffset.x <= GET_EXTRA_THRESHOLD + leftPadding
                 getDescExtraChain();
-            } else if (nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - GET_EXTRA_THRESHOLD - 2 * PIXEL_WIDTH) { 
+            } else if (nativeEvent.contentOffset.x == nativeEvent.contentSize.width - PIXEL_WIDTH) { //nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - GET_EXTRA_THRESHOLD - 2 * PIXEL_WIDTH
                 getAscExtraChain();
             }
         }
-        if (!chain.isNewest && chain.attached && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH) {
+        if (!chain.isNewest && chain.spaceBetween == 0 && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH) {
             console.log("isNewest");
             dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: true }));
         } else if (chain.isNewest && nativeEvent.contentOffset.x < nativeEvent.contentSize.width - PIXEL_WIDTH) {
@@ -192,74 +145,56 @@ export const ChainDisplay = memo(() => {
         if (!chain || chain.virtualizedChain[0]?.first || chain.newestChain[0].first) return;
         console.log("DESC EXTRA")
         thresholdLeft = true;
+        setDisabled(true);
         getExtraChain(currentIndex, chain.virtualizedChain[0]?.Created || chain.newestChain[0].Created, false).then((res) => {
             if (!res.Error) {
-                leftRes = parseDescChain(res, chain.virtualizedChain[0] || chain.newestChain[0]);
-                requireFullStop = leftRes.chain.length < EXTRA_CHAIN_LENGTH || leftRes.totalWidth > chain.leftPadding - DEFAULT_LEFT_PLACEHOLDER_PADDING;
-                console.log("GET EXTRA CHAIN HIT: ", disableScroll, requireFullStop)
-                if (!requireFullStop || loading) prependChain();
+                dispatch(userActions.addDescExtraChain({ index: currentIndex, chain: res }));
             }
         });
     }
 
     const getAscExtraChain = () => {
         if (!chain) return;
-        if (chain.attached) return; //Eventually check condition if it is really newest, if not completely get newChain
-        console.log("ASC EXTRA")
+        if (chain.spaceBetween == 0) return;
+        console.log("ASC EXTRA");
         thresholdRight = true;
+        setDisabled(true);
         getExtraChain(currentIndex, chain.virtualizedChain[chain.virtualizedChain.length - 1].Created, true, chain.spaceBetween > EXTRA_CHAIN_LENGTH ? EXTRA_CHAIN_LENGTH : chain.spaceBetween).then((res) => {
             if (!res.Error) {
-                dispatch(userActions.addAscExtraChain({ index: currentIndex, chain: res, asc: true }));
+                dispatch(userActions.addAscExtraChain({ index: currentIndex, chain: res }));
             }
         });;
     };
 
-    const prependChain = () => {
-        console.log("Prepending...")
-        if (requireFullStop) { //THE INCOMING WIDTH IS LESS THAN OR EQUAL TO leftPadding - DEFAULT_PADDING
-            let prevOffset = chainOffsets[currentIndex]!;
-            let tempInterval = setInterval(() => {
-                if (prevOffset == chainOffsets[currentIndex]) {
-                    dispatch(userActions.addDescExtraChain({ index: currentIndex, chain: leftRes.chain, totalWidth: leftRes.totalWidth, asc: false }));
-                    clearInterval(tempInterval);
-                } else {
-                    prevOffset = chainOffsets[currentIndex]!;
-                }
-            }, 100);
-        } else if (!requireFullStop) {
-            dispatch(userActions.addDescExtraChain({ index: currentIndex, chain: leftRes.chain, totalWidth: leftRes.totalWidth, asc: false }));
-        }
-    }
-
     const leftVirtualPadding = () => {
         if (chain.virtualIndex - MESSAGES_LOAD_LEFT >= 0) {
-            return getItemByVirtualIndex(chain.virtualIndex - MESSAGES_LOAD_LEFT).offset - chain.leftPadding;
+            return getItemByVirtualIndex(chain.virtualIndex - MESSAGES_LOAD_LEFT).offset;
         }
         return 0;
     };
 
     const rightVirtualPadding = () => {
-        let length = getVirtualLength();
-        if (chain.virtualIndex + MESSAGES_LOAD_RIGHT < length) {
-            let item = getItemByVirtualIndex(length - 1);
+        curLength = getVirtualLength();
+        if (chain.virtualIndex + MESSAGES_LOAD_RIGHT < curLength) {
+            let item = getItemByVirtualIndex(curLength - 1);
             return item.offset + item.totalWidth - getItemByVirtualIndex(chain.virtualIndex + MESSAGES_LOAD_RIGHT).offset;
         }
         return 0;
     };
  
     const getItemByVirtualIndex = (vIndex: number) => {
-        if (chain.attached && vIndex >= chain.virtualizedChain.length) {
+        if (chain.spaceBetween == 0 && vIndex >= chain.virtualizedChain.length) {
             return chain.newestChain[vIndex - chain.virtualizedChain.length];
         }
         return chain.virtualizedChain[vIndex];
     }
 
     const getVirtualLength = () => {
-        return chain.virtualizedChain.length + (chain.attached ? chain.newestChain.length : 0);
+        return chain.virtualizedChain.length + (chain.spaceBetween == 0 ? chain.newestChain.length : 0);
     }
 
     const goToNewest = () => {
-        if (chain.attached) {
+        if (chain.spaceBetween == 0) {
             chainRef.current.scrollToEnd({ animated: true });
         } else {
             toNewest = true;
@@ -290,26 +225,29 @@ export const ChainDisplay = memo(() => {
                     <>
                     <ScrollView
                         ref={chainRef} 
-                        contentContainerStyle={{ paddingLeft: MESSAGE_SPACER, paddingRight: (chain.attached ? MESSAGE_SPACER : 0)}}
+                        contentContainerStyle={{ paddingLeft: MESSAGE_SPACER, paddingRight: (chain.spaceBetween == 0 ? MESSAGE_SPACER : 0)}} 
+                        maintainVisibleContentPosition={{
+                            minIndexForVisible: 2
+                        }}
                         horizontal={true} 
                         showsHorizontalScrollIndicator={false} 
                         removeClippedSubviews={true} 
                         onScroll={onScroll}
+                        scrollEnabled={!disabled}
                         scrollEventThrottle={16}
-                        scrollEnabled={!disableScroll} 
                         onContentSizeChange={updateScrollPosition}
                     >
                         {
-                            !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING} leftPadding={(chain.leftPadding - DEFAULT_LEFT_PLACEHOLDER_PADDING)} /> : undefined
+                            !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING + 50} leftPadding={-50} /> : undefined
                         }
                         <View style={{ width: leftVirtualPadding() }} />
                         {
                             chain.newestChain.length > 0 ? (
-                                (chain.attached ? chain.virtualizedChain.concat(chain.newestChain) : chain.virtualizedChain).slice(Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT), Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT) + MESSAGES_TO_LOAD).map((item, index) => {  
+                                (chain.spaceBetween == 0 ? chain.virtualizedChain.concat(chain.newestChain) : chain.virtualizedChain).slice(Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT), Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT) + MESSAGES_TO_LOAD).map((item, index) => {  //.slice(Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT), Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT) + MESSAGES_TO_LOAD)
                                     return (
                                         <AudioResponse 
-                                            key={item.key} 
-                                            item={item} 
+                                            item={item}
+                                            key={item.key}
                                             chainID={curFriend!.ChainID} 
                                             selected={item.MessageID == audioState.curPlayingMessageID} 
                                             isPlaying={item.MessageID == audioState.curPlayingMessageID ? audioState.isPlaying : false} 
@@ -322,11 +260,11 @@ export const ChainDisplay = memo(() => {
                         }
                         <View style={{ width: rightVirtualPadding() }} />
                         {
-                            !chain.attached ? <PlaceholderGenerator width={PIXEL_WIDTH} rightPadding={-PIXEL_WIDTH / 3} /> : undefined
+                            chain.spaceBetween != 0 ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING + 50} rightPadding={-50} /> : undefined
                         }
                     </ScrollView>
                     <Animated.View style={{ position: "absolute", right: 10, bottom: 13, transform: [{ translateX: isNewestAnimation }] }}>
-                        <TouchableHighlight disabled={disableScroll} underlayColor={"#2A2A2A"} activeOpacity={0.5} onPress={goToNewest} style={{ borderRadius: 50, width: 40, height: 40, backgroundColor: "#2F2F2F", shadowColor: "#000", shadowOffset: { width: 0, height: 1,}, shadowOpacity: 0.3, shadowRadius: 2.5, elevation: 4, alignItems: 'center', justifyContent: 'center' }}>
+                        <TouchableHighlight disabled={disabled} underlayColor={"#2A2A2A"} activeOpacity={0.5} onPress={goToNewest} style={{ borderRadius: 50, width: 40, height: 40, backgroundColor: "#2F2F2F", shadowColor: "#000", shadowOffset: { width: 0, height: 1,}, shadowOpacity: 0.3, shadowRadius: 2.5, elevation: 4, alignItems: 'center', justifyContent: 'center' }}>
                             <Icon source={BACK_RESOURCE} tint={"#FAFAFA"} style={{ transform: [{ rotateY: '180deg' }] }} />
                         </TouchableHighlight>
                     </Animated.View>
