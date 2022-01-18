@@ -13,6 +13,7 @@ import { reInitializeApp } from './src/services/Initialize.service';
 import { appActions } from './src/store/slices/App.slice';
 import { getWebsocketState } from './src/services/Websocket.service';
 import { authActions } from './src/store/slices/Auth.slice';
+import Orientation from 'react-native-orientation-locker';
 
 function AppCondition() {
   const authenticated = useSelector(({ authenticated }: GlobalState) => authenticated.authenticated);
@@ -83,6 +84,11 @@ function AppGate() {
 }
 
 export default function App() {
+  
+  useEffect(() => {
+    Orientation.lockToPortrait();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <Provider store={store}>

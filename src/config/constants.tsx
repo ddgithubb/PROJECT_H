@@ -25,4 +25,4 @@ export const DATE_INDICATOR_WIDTH = 60;
 export const CHAIN_METERS_WIDTH = 6;
 
 export const DEFAULT_LEFT_PLACEHOLDER_PADDING = 100;
-export const GET_EXTRA_THRESHOLD = 400;
+export const GET_EXTRA_THRESHOLD = 200;

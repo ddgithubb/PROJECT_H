@@ -85,12 +85,14 @@ public class MvcpHorizontalScrollViewManagerModule extends ReactContextBaseJavaM
             public void onLayoutUpdated(ReactShadowNode root) {
               if (HorizontalScrollViewUIHolders.firstVisibleView == null) return;
 
-              Log.d("MVCP_DEBUG", HorizontalScrollViewUIHolders.firstVisibleView.getLeft() + " .. " + HorizontalScrollViewUIHolders.prevFirstVisibleTop);
               int deltaX = HorizontalScrollViewUIHolders.firstVisibleView.getLeft() - HorizontalScrollViewUIHolders.prevFirstVisibleTop;
+              Log.d("MVCP", "deltaX" + deltaX);
 
               if (Math.abs(deltaX) > 1) {
                 boolean isWithinThreshold = HorizontalScrollViewUIHolders.currentScrollX <= autoscrollToTopThreshold;
                 horizontalScrollView.setScrollX(HorizontalScrollViewUIHolders.currentScrollX + deltaX);
+                horizontalScrollView.fling(0);
+                Log.d("MVCP", "stopped");
 
                 // If the offset WAS within the threshold of the start, animate to the start.
                 if (isWithinThreshold) {

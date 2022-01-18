@@ -25,6 +25,7 @@ import { audioActions } from '../../../../store/slices/Audio.slice';
 import { CHAIN_HEIGHT, MESSAGE_HEIGHT, MESSAGE_SPACER } from '../../../../config/constants';
 import { METER_AMOUNTS } from '../../../../services/Chat-activator.service';
 import { getState, GlobalState } from '../../../../store/Store';
+import { FadeInView } from '../../../../components/Animation.components';
 
 var audioRes: any[] = [];
 var prevSoundDurations: number;
@@ -299,7 +300,7 @@ export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastI
                                 ref={flatlistRef} 
                                 style={{ marginLeft: 50 }} 
                                 contentContainerStyle={{ height: MESSAGE_HEIGHT, alignItems: "center", paddingRight: 10 }}
-                                horizontal={false} 
+                                horizontal={true} 
                                 removeClippedSubviews={true} 
                                 showsHorizontalScrollIndicator={false} 
                                 initialNumToRender={METER_AMOUNTS} 

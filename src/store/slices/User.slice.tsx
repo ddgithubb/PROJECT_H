@@ -285,12 +285,11 @@ const userSlice = createSlice({
         },
         goToNewest(state, { payload }) {
             let chain = state.chains[payload.index];
-            if (chain.spaceBetween != 0) {
-                chain.isNewest = true;
-                chain.virtualizedChain = [];
-                chain.spaceBetween = 0;
-                chain.virtualIndex = chain.newestChain.length - 1;
-            }
+            chain.isNewest = true;
+            chain.virtualizedChain = [];
+            chain.spaceBetween = 0;
+            chain.virtualIndex = chain.newestChain.length - 1;
+            calculateOffset(chain);
         },
         setIsNewest(state, { payload }) {
             state.chains[payload.index].isNewest = payload.isNewest;

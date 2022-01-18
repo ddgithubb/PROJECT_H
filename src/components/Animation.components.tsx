@@ -5,11 +5,11 @@ import { Animated } from 'react-native';
 import { NativeViewGestureHandler } from 'react-native-gesture-handler';
 
 export function FadeInView(props: any) {
+  const { style, startOffsetX, ...otherProps } = props;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const { style, ...otherProps } = props;
+  const offsetXAnim = useRef(new Animated.Value(startOffsetX || 0)).current;
 
   useEffect(() => {
-    fadeAnim.setValue(0);
     Animated.timing(
       fadeAnim,
       {
@@ -18,10 +18,21 @@ export function FadeInView(props: any) {
         useNativeDriver: true,
       }
     ).start();
-  }, [fadeAnim])
+    if (startOffsetX) {
+      Animated.timing(
+        offsetXAnim,
+        {
+          toValue: 0,
+          duration: props.duration || 100,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.exp),
+        }
+      ).start();
+    }
+  }, [])
 
   return (
-    <Animated.View style={[style, {opacity: fadeAnim }]} { ...otherProps } />
+    <Animated.View style={[style, { opacity: fadeAnim, transform: [{ translateX: offsetXAnim }] }]} { ...otherProps } />
   );
 }
 

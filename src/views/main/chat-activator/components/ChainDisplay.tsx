@@ -20,10 +20,10 @@ import { BACK_RESOURCE } from '../../../../services/Resource.service';
 var chainOffsets: (number | undefined)[] = []; 
 
 var curFriend: Friend | undefined = undefined;
+var initOffset: number;
 var thresholdLeft: boolean;
 var thresholdRight: boolean;
 var curLength: number;
-var initialized = true;
 var curObject;
 var tempOffset: number;
 var tempIndex: number;
@@ -45,16 +45,16 @@ export const ChainDisplay = memo(() => {
         thresholdRight = false;
         thresholdLeft = false;
         curLength = -1;
-        initialized = false;
         scrolledToEnd = false;
         toNewest = false;
         leftPadding = 0;
+        initOffset = chainOffsets[currentIndex] || 0;
         curFriend = getState().user.relations.Friends[currentIndex];
     }, [currentIndex]);
 
     useEffect(() => {
         if (chain?.isNewest) scrolledToEnd = true;
-        if (!chain || !initialized) return;
+        if (!chain) return;
         if (!chain.isNewest) {
             Animated.spring(
                 isNewestAnimation,
@@ -77,17 +77,6 @@ export const ChainDisplay = memo(() => {
     }, [chain?.isNewest]);
 
     const updateScrollPosition = () => { 
-        //console.log("updated", chain.isNewest);
-        if (!initialized && chain.newestChain.length > 0) {
-            initialized = true;
-            console.log(chain.initOffset);
-            if (!chainOffsets[currentIndex]) {
-                chainRef.current.scrollTo({x: chain.initOffset, y: 0, animated: false});
-            } else if (chainOffsets[currentIndex]) {
-                chainRef.current.scrollTo({x: chainOffsets[currentIndex], y: 0, animated: false});
-            }
-            return;
-        }
         if (chain.isNewest) {
             chainRef.current.scrollToEnd({ animated: !toNewest });
             toNewest = false;
@@ -103,7 +92,7 @@ export const ChainDisplay = memo(() => {
     const onScroll = ({ nativeEvent }: any) => {
         //console.log("velocity", nativeEvent.velocity.x, "offset", nativeEvent.contentOffset.x, "width", nativeEvent.contentSize.width );
         chainOffsets[currentIndex] = nativeEvent.contentOffset.x;
-        if (!thresholdLeft && !thresholdRight) {
+        if (!thresholdLeft && !thresholdRight && !toNewest) {
             curLength = getVirtualLength();
             curObject = getItemByVirtualIndex(chain.virtualIndex);
             leftPadding = !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? DEFAULT_LEFT_PLACEHOLDER_PADDING : 0;
@@ -131,13 +120,13 @@ export const ChainDisplay = memo(() => {
             } else if (nativeEvent.contentOffset.x == nativeEvent.contentSize.width - PIXEL_WIDTH) { //nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - GET_EXTRA_THRESHOLD - 2 * PIXEL_WIDTH
                 getAscExtraChain();
             }
-        }
-        if (!chain.isNewest && chain.spaceBetween == 0 && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH) {
-            console.log("isNewest");
-            dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: true }));
-        } else if (chain.isNewest && nativeEvent.contentOffset.x < nativeEvent.contentSize.width - PIXEL_WIDTH) {
-            console.log("isNotNewest");
-            dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: false }));
+            if (!chain.isNewest && chain.spaceBetween == 0 && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH) {
+                console.log("isNewest");
+                dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: true }));
+            } else if (chain.isNewest && nativeEvent.contentOffset.x < nativeEvent.contentSize.width - PIXEL_WIDTH) {
+                console.log("isNotNewest");
+                dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: false }));
+            }
         }
     };
 
@@ -194,7 +183,7 @@ export const ChainDisplay = memo(() => {
     }
 
     const goToNewest = () => {
-        if (chain.spaceBetween == 0) {
+        if (chain.virtualizedChain.length == 0) {
             chainRef.current.scrollToEnd({ animated: true });
         } else {
             toNewest = true;
@@ -228,14 +217,17 @@ export const ChainDisplay = memo(() => {
                         contentContainerStyle={{ paddingLeft: MESSAGE_SPACER, paddingRight: (chain.spaceBetween == 0 ? MESSAGE_SPACER : 0)}} 
                         maintainVisibleContentPosition={{
                             minIndexForVisible: 2
-                        }}
+                        }} 
+                        style={{ overflow: "visible" }} 
                         horizontal={true} 
                         showsHorizontalScrollIndicator={false} 
                         removeClippedSubviews={true} 
-                        onScroll={onScroll}
-                        scrollEnabled={!disabled}
-                        scrollEventThrottle={16}
-                        onContentSizeChange={updateScrollPosition}
+                        onScroll={onScroll} 
+                        scrollEnabled={!disabled} 
+                        scrollEventThrottle={16} 
+                        onContentSizeChange={updateScrollPosition} 
+                        contentOffset={{ x: initOffset || chain.initOffset, y: 0 }}
+                        key={currentIndex}
                     >
                         {
                             !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING + 50} leftPadding={-50} /> : undefined
