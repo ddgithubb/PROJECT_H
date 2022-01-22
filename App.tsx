@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppState, AppStateStatus, StatusBar } from 'react-native';
+import { AppState, AppStateStatus, PermissionsAndroid, Platform, StatusBar } from 'react-native';
 import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Main from './src/Main';
@@ -17,10 +17,41 @@ import Orientation from 'react-native-orientation-locker';
 
 function AppCondition() {
   const authenticated = useSelector(({ authenticated }: GlobalState) => authenticated.authenticated);
+  const [ permitted, setPermitted ] = useState(true);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    async function runPermissions() {
+      if (Platform.OS === 'android') {
+        const grants = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        ]);
+  
+        if (
+          grants['android.permission.WRITE_EXTERNAL_STORAGE'] ===
+          PermissionsAndroid.RESULTS.GRANTED &&
+          grants['android.permission.READ_EXTERNAL_STORAGE'] ===
+          PermissionsAndroid.RESULTS.GRANTED &&
+          grants['android.permission.RECORD_AUDIO'] ===
+          PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('Permissions granted');
+          setPermitted(true);
+        } else {
+          console.log('All required permissions not granted');
+          setPermitted(false);
+          return;
+        }
+      }
+    }
+    runPermissions();
+  }, [authenticated]);
 
   return (
     authenticated ? (
-      <Main />
+      permitted ? <Main /> : undefined //TODO: Eventually put the not permitted view here
     ) : (
       <Auth />
     )
@@ -60,12 +91,13 @@ function AppGate() {
           //     fatalError("not a device")
           // }
         }
+
         await reInitializeApp();
-      } catch (e) {
-        fatalError(e);
-      } finally {
+
         setGateLifted(true);
         SplashScreen.hide();
+      } catch (e) {
+        fatalError(e);
       }
     }
     loadDataAsync();

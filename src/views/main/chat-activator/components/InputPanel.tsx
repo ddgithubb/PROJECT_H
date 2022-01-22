@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Animated, Easing, Pressable, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, TouchableOpacity, View } from 'react-native';
 import { ContainerView, DangerText, Icon, RippleTouch, Subtitle } from '../../../../components/Generic.component';
 import { sendAudio } from '../../../../services/Chains.service';
 import { 
@@ -9,8 +9,8 @@ import { memo } from 'react';
 import { somethingWrong } from '../../../../services/Errors.service';
 import { getState } from '../../../../store/Store';
 import { FlatList } from 'react-native-gesture-handler';
-import { FadeInOutView, FadeInView } from '../../../../components/Animation.components';
-import { MICROPHONE_RESOURCE, REDO_RESOURCE, SEND_RESOURCE, SEND_DISABLED_RESOURCE, CANCEL_RESOURCE, GRID_VIEW_RESOURCE } from '../../../../services/Resource.service';
+import { FadeInOutView } from '../../../../components/Animation.components';
+import { SEND_RESOURCE, SEND_DISABLED_RESOURCE, CANCEL_RESOURCE, GRID_VIEW_RESOURCE } from '../../../../services/Resource.service';
 import { millisToMinutesAndSeconds } from '../../../../services/Time.service';
 import { PIXEL_WIDTH } from '../../../../config/dimensions';
 import { METER_AMOUNTS } from '../../../../services/Chat-activator.service';
@@ -29,7 +29,7 @@ var errorInterval: any = undefined;
 var meters: number[] = [];
 var expectedNextMeter: number;
 
-export const InputPanel = memo(({ loading }: any) => {
+export const InputPanel = memo(({ loading }: { loading: boolean }) => {
 
     const [ recorded, setRecorded ] = useState(false);
     const [ maxLimit, setMaxLimit ] = useState(false);

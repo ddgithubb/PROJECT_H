@@ -22,9 +22,9 @@ target 'PROJECT_H' do
 
   pod 'react-native-orientation-locker', :path => '../node_modules/react-native-orientation-locker'
 
-  pod 'RNAudioRecorderPlayer', :path => '../node_modules/react-native-audio-recorder-player'
 
   pod 'RNPermissions', :path => '../node_modules/react-native-permissions'
+
 
   target 'PROJECT_HTests' do
     inherit! :complete
