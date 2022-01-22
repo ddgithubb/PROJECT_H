@@ -39,16 +39,14 @@ export default function Login({ navigation }: any) {
         login(email, password).then((res) => {
             if (res.Error) {
                 setLogging(false);
-                if (res.Type == "Email") {
+                if (res.Problem == "Email") {
                     setEmailErr(true);
                     setErrorText("Email doesn't exist!");
-                } else if (res.Type == "Password") {
+                } else if (res.Problem == "Password") {
                     setErrorText("Password is incorrect!");
                 }
             } else {
-                dispatch(authActions.setSession(res.SessionID))
-                dispatch(authActions.setAuth(res.Tokens))
-                initializeApp(res.Data);
+                initializeApp(res);
             }
         })
     }

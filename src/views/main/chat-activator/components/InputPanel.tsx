@@ -139,6 +139,7 @@ export const InputPanel = memo(({ loading }: any) => {
                 toValue: 1,
                 duration: 250,
                 useNativeDriver: true,
+                easing: Easing.out(Easing.quad),
             }).start();
             if (!recorded) {
                 expectedNextMeter = METERING_INTERVAL_DURATION;
@@ -162,6 +163,7 @@ export const InputPanel = memo(({ loading }: any) => {
                 toValue: 0,
                 duration: 200,
                 useNativeDriver: true,
+                easing: Easing.out(Easing.quad),
             }).start();
             // if (recordingInstance) { AUDIO_REPLACE_ID
             //     recording = false;

@@ -22,6 +22,7 @@ export const MESSAGE_MAX_WIDTH = 150;
 export const MESSAGE_MIN_WIDTH = 60 + MESSAGE_SPACER;
 export const DATE_INDICATOR_WIDTH = 60;
 
+export const DISPLAY_DURATION_WIDTH = 50;
 export const CHAIN_METERS_WIDTH = 6;
 
 export const DEFAULT_LEFT_PLACEHOLDER_PADDING = 100;

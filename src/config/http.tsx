@@ -5,17 +5,30 @@ const DOMAIN: string = "10.0.0.18:8000"; //10.217.70.188:8000
 const VERSION: string = "v1";
 const HOST: string = "http://" + DOMAIN;
 const WSHOST: string = "ws://" + DOMAIN + "/stream";
-const URI: string = HOST + "/api" + VERSION;
+const URI: string = HOST + "/api/" + VERSION;
 const AUTH_PATH: string =  URI + "/auth";
 const PUBLIC_PATH: string = URI + "/public";
-const SOCIAL_PATH: string = URI + "/social";
-const RESOURCE_PATH: string = URI + "/resources";
-const FORM_PATH: string = URI + "/forms";
+const USER_PATH: string = URI + "/user";
 const NOTIF_TIME: number = 3000;
+
+const HEADER_REFRESHED_NAME = "x-refreshed";
+const HEADER_SESSION_ID_NAME = "x-session-id";
+const HEADER_REFRESH_TOKEN_NAME = "x-refresh-token";
+const HEADER_REFRESH_TOKEN_EXPIRE_NAME = "x-refresh-token-expire";
+const HEADER_ACCESS_TOKEN_NAME = "x-access-token";
 
 var state: GlobalState;
 
-function httpPostOptions(body: any) {
+function setAuthHeaders(options: any) {
+    state = getState();
+    options.headers['Authorization'] = 'Bearer ' + state.auth.accessToken;
+    options.headers[HEADER_SESSION_ID_NAME] = state.auth.sessionID;
+    options.headers[HEADER_REFRESH_TOKEN_NAME] = state.auth.refreshToken.token;
+    options.headers[HEADER_REFRESH_TOKEN_EXPIRE_NAME] = state.auth.refreshToken.expireAt.toString();
+    return options;
+}
+
+function httpPostOptions(body?: any) {
     return {
         method: 'POST',
         headers: {
@@ -26,36 +39,47 @@ function httpPostOptions(body: any) {
     }
 }
 
-function httpPostAuthOptions() {
-    state = getState()
-    return {
+function httpPostAuthOptions(body?: any) {
+    return setAuthHeaders({
         method: 'POST',
         headers: {
-            'Authorization': 'Bearer ' + state.auth.accessToken, 
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            sessionID: state.auth.sessionID,
-            refreshToken: state.auth.refreshToken
-        })
-    }
+        body: JSON.stringify(body)
+    });
 }
 
-function httpPutAuthOptions() {
-    state = getState()
-    return {
-        method: 'PUT',
+function httpGetAuthOptions() {
+    return setAuthHeaders({
+        method: 'GET',
         headers: {
-            'Authorization': 'Bearer ' + state.auth.accessToken, 
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            sessionID: state.auth.sessionID,
-            refreshToken: state.auth.refreshToken
-        })
-    }
+    });
+}
+
+function httpPutAuthOptions(body?: any) {
+    return setAuthHeaders({
+        method: 'PUT',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+}
+
+function httpPostAuthFormOptions(body: FD) {
+    return setAuthHeaders({
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'multipart/form-data',
+        },
+        body: body as any as FormData
+    });
 }
 
 function httpGetOptions() {
@@ -67,20 +91,24 @@ function httpGetOptions() {
     }
 }
 
-function httpPostAuthFormOptions(body: FD) {
-    state = getState();
-    body.append("sessionID", state.auth.sessionID);
-    body.append("token", state.auth.refreshToken.token);
-    body.append("expireAt", state.auth.refreshToken.expireAt);
-    return {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + state.auth.accessToken, 
-            'Accept': 'application/json',
-            'Content-Type': 'multipart/form-data'
-        },
-        body: body as any as FormData
-    }
-}
-
-export { VERSION, HOST, WSHOST, URI, NOTIF_TIME, AUTH_PATH, PUBLIC_PATH, SOCIAL_PATH, RESOURCE_PATH, FORM_PATH, httpPostOptions, httpPostAuthOptions, httpGetOptions, httpPutAuthOptions, httpPostAuthFormOptions }
+export { 
+    VERSION, 
+    HOST, 
+    WSHOST, 
+    URI, 
+    NOTIF_TIME, 
+    AUTH_PATH, 
+    PUBLIC_PATH, 
+    USER_PATH, 
+    HEADER_REFRESHED_NAME, 
+    HEADER_SESSION_ID_NAME, 
+    HEADER_REFRESH_TOKEN_NAME, 
+    HEADER_REFRESH_TOKEN_EXPIRE_NAME, 
+    HEADER_ACCESS_TOKEN_NAME, 
+    httpPostOptions, 
+    httpPostAuthOptions, 
+    httpGetAuthOptions, 
+    httpGetOptions, 
+    httpPutAuthOptions, 
+    httpPostAuthFormOptions
+ }

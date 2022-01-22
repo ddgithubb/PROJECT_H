@@ -12,6 +12,7 @@ import {
     DATE_INDICATOR_WIDTH,
     MESSAGE_MAX_WIDTH,
     CHAIN_METERS_WIDTH,
+    DISPLAY_DURATION_WIDTH,
 } from '../../../../config/constants';
 import { memo } from 'react';
 import { FlatList } from 'react-native-gesture-handler';
@@ -26,6 +27,7 @@ import { CHAIN_HEIGHT, MESSAGE_HEIGHT, MESSAGE_SPACER } from '../../../../config
 import { METER_AMOUNTS } from '../../../../services/Chat-activator.service';
 import { getState, GlobalState } from '../../../../store/Store';
 import { FadeInView } from '../../../../components/Animation.components';
+import { Message } from '../../../../models/User.model';
 
 var audioRes: any[] = [];
 var prevSoundDurations: number;
@@ -35,7 +37,16 @@ var syncIndexPosition: number;
 var curPlayingChainID: string = "";
 var playingIndex: number = -1;
 
-export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastItem, lastSeen }: any) => {
+export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastItem, lastSeen }: 
+    {
+        item: Message,
+        chainID: string,
+        selected: boolean,
+        isPlaying: boolean,
+        isLastItem: boolean,
+        lastSeen: boolean,
+    }
+) => {
 
     const flatlistRef = useRef<any>();
     const myUserID = useSelector(({ user }: GlobalState) => user.userID );
@@ -46,7 +57,7 @@ export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastI
     const actionTransformYAnim = useRef<Animated.Value>(new Animated.Value(10));
     const metersTransformYAnim = useRef<Animated.Value>(new Animated.Value(MESSAGE_HEIGHT / 2 - 3));
     const [ curActionID, setCurActionID ] = useState(0);
-    const [ timeCreated, dateCreated, dateIndicator ] = useMemo(() => [ formatTime(item.Created), formatDateIndicator(item.Created), formatDateIndicator(item.dateIndicator) ], [item.Created]);
+    const [ timeCreated, dateCreated, dateIndicator ] = useMemo(() => [ formatTime(item.Created), formatDateIndicator(item.Created), formatDateIndicator(item.dateIndicatorCreated) ], [item.Created]);
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -292,7 +303,7 @@ export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastI
                                 ) : undefined
                             )
                         }
-                        <Subtitle style={{ color: "#F0F0F0", alignSelf: "center", position: "absolute", left: 0, fontWeight: "bold", fontSize: 15, paddingLeft: 10, width: 50 }}>{ millisToMinutesAndSeconds(currentPosition.position) }</Subtitle>
+                        <Subtitle style={{ color: "#F0F0F0", alignSelf: "center", position: "absolute", left: 0, fontWeight: "bold", fontSize: 15, paddingLeft: 10, width: DISPLAY_DURATION_WIDTH }}>{ millisToMinutesAndSeconds(currentPosition.position) }</Subtitle>
                         <Animated.View style={{ flexGrow: 1, transform: [{ translateY: metersTransformYAnim.current }] }}>
                             <FlatList
                                 data={item.Display}
@@ -322,9 +333,9 @@ export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastI
                 }
             </View>
             {
-                item.dateIndicator ?
-                    <View style={{ height: MESSAGE_HEIGHT, width: DATE_INDICATOR_WIDTH, justifyContent: "center" }}>
-                        <View style={{ width: DATE_INDICATOR_WIDTH, height: 3, backgroundColor: "#2A2A2A", borderRadius: 50, marginTop: 7 }} />
+                item.dateIndicatorCreated ?
+                    <View style={{ height: MESSAGE_HEIGHT, width: item.dateIndicatorWidth, justifyContent: "center" }}>
+                        <View style={{ width: item.dateIndicatorWidth, height: 3, backgroundColor: "#2A2A2A", borderRadius: 50, marginTop: 7 }} />
                         <View style={{ position: "absolute", right: 0, bottom: MESSAGE_HEIGHT / 2 - 8, width: 25, height: 2, backgroundColor: lastSeen && !isLastItem ? DANGER_COLOR : "#2F2F2F", borderRadius: 50 }} />
                         <View style={{ position: "absolute", bottom: MESSAGE_HEIGHT / 2 - 1, right: 1 }}>
                             <Subtitle style={{ fontSize: 13, fontWeight: "bold" }} >{ isLastItem ? "Today" : dateIndicator }</Subtitle>
@@ -333,11 +344,10 @@ export const AudioResponse = memo(({ item, chainID, selected, isPlaying, isLastI
                             <Subtitle style={{ fontSize: 9, fontWeight: "bold", color: "#4B4B4B" }} >{ dateCreated }</Subtitle>
                         </View>
                     </View>
-                : undefined
-            }
-            {
-                lastSeen && !isLastItem && !item.dateIndicators ?
-                    <View style={{ position: "absolute", right: -2, bottom: (MESSAGE_HEIGHT - 35) / 2, height: 35, width: 3, backgroundColor: DANGER_COLOR, borderRadius: 50 }} />
+                : lastSeen && !isLastItem ?
+                    <View style={{ height: MESSAGE_HEIGHT, alignItems: "center", justifyContent: "center" }}>
+                        <View style={{ position: "absolute", right: -3, height: 8, width: 6, backgroundColor: DANGER_COLOR, borderRadius: 50 }} />
+                    </View>
                 : undefined
             }
             <Animated.View style={{ position: "absolute", left: 5, top: 5, transform: [{ scale: actionScaleAnim.current }, { translateY: actionTransformYAnim.current }] }}>

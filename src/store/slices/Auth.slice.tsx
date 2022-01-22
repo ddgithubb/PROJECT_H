@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { Authenticated, AuthState } from "../../models/Auth.model";
+import { store } from "../Store";
 
 const initialState: AuthState = {
     verifying: false,
@@ -22,9 +23,9 @@ const authSlice = createSlice({
     initialState: initialState,
     reducers: {
         setAuth(state, { payload }) {
-            state.refreshToken.token = payload.RefreshToken.Token
-            state.refreshToken.expireAt = payload.RefreshToken.ExpireAt
-            state.accessToken = payload.AccessToken
+            state.refreshToken.token = payload.refreshToken
+            state.refreshToken.expireAt = payload.expireAt
+            state.accessToken = payload.accessToken
         },
         setSession(state, action) {
             state.sessionID = action.payload
@@ -56,6 +57,11 @@ const authenticatedSlice = createSlice({
         },
     }
 });
+
+export function resetAuth() {
+    store.dispatch(authenticatedAction.setAuthenticated(false));
+    store.dispatch(authActions.clearAuth(null));
+}
 
 export const authReducers = authSlice.reducer;
 export const authActions = authSlice.actions;

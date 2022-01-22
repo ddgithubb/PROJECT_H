@@ -1,11 +1,15 @@
 import FormData from "form-data";
 import { getState, store } from "../store/Store";
-import { postForm, resourcePost } from "./Http.service";
+import { userPostForm, userGet, userPost } from "./Http.service";
 import { Buffer } from 'buffer'
 import { userActions } from "../store/slices/User.slice";
 import { sendMessage } from "./Websocket-send.service";
 
 const dispatch = store.dispatch
+
+function getChainIDEndpoint(key: number) {
+    return "/chain/" + getState().user.relations.Friends[key].ChainID;
+}
 
 export function sendAudio(key: number, display: number[], file: string, duration: number): Promise<any> {
     let displayBytes = Buffer.from(display).toString("utf-8");
@@ -17,7 +21,7 @@ export function sendAudio(key: number, display: number[], file: string, duration
         name: "sent_audio.m4a",
     });
     form.append("display", displayBytes);
-    return postForm("/send-audio?chainID=" + state.user.relations.Friends[key].ChainID + "&requestid=" + state.user.relations.Friends[key].RelationID + "&duration=" + duration.toString(), form).then((res) => {
+    return userPostForm(getChainIDEndpoint(key) + "/send-audio?requestid=" + state.user.relations.Friends[key].RelationID + "&duration=" + duration.toString(), form).then((res) => {
         if (!res.Error) {
             dispatch(userActions.addMessage({ index: key, chain: {
                 MessageID: res.MessageID,
@@ -36,7 +40,7 @@ export function sendAudio(key: number, display: number[], file: string, duration
 
 export function getChain(key: number): Promise<any> {
     let state = getState();
-    return resourcePost("/get-chain?chainID=" + state.user.relations.Friends[key].ChainID + "&requestTime=" + Math.max(state.user.relations.Friends[key].LastRecv, state.user.relations.Friends[key].LastSeen)).then((res) => {
+    return userGet(getChainIDEndpoint(key) + "/get-chain?requestTime=" + Math.max(state.user.relations.Friends[key].LastRecv, state.user.relations.Friends[key].LastSeen)).then((res) => {
         if (!res.Error) {
             dispatch(userActions.newChain({ index: key, chain: res }));
         }
@@ -44,6 +48,5 @@ export function getChain(key: number): Promise<any> {
 }
 
 export function getExtraChain(key: number, reqTime: number, asc: boolean = false, limit?: number): Promise<any> {
-    let state = getState();
-    return resourcePost("/get-chain?chainID=" + state.user.relations.Friends[key].ChainID + "&requestTime=" + reqTime.toString() + "&asc=" + asc + "&desc=" + !asc + (limit ? "&limit=" + limit.toString() : ""))
+    return userGet(getChainIDEndpoint(key) + "/get-chain?requestTime=" + reqTime.toString() + "&asc=" + asc + "&desc=" + !asc + (limit ? "&limit=" + limit.toString() : ""))
 }

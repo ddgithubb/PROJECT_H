@@ -1,4 +1,4 @@
-import { authActions, authenticatedAction } from '../store/slices/Auth.slice';
+import { authActions, authenticatedAction, resetAuth } from '../store/slices/Auth.slice';
 import { errorActions } from '../store/slices/Error.slice';
 import { store, getState } from '../store/Store';
 import { reInitializeApp } from './Initialize.service';
@@ -25,42 +25,13 @@ export function somethingWrong(err: any) {
     console.log("SOMETHING WRONG: ", err)
 }
 
+export function internalError(err: any) {
+    console.log("SERVER INTERNAL ERROR", err)
+}
+ 
 export function fatalError(err: any) {
     //DISPLAY MESSAGE FREEZE AND TELL USER TO FORCE (COMPLETELY CLOSE (figure out a way maybe with redux state)) CLOSE APP
     console.log("FATAL ERR: " + err);
     dispatch(errorActions.setFatalErr(null))
     resetAuth();
-}
-
-export async function handleResponse(response: Response) {
-    if (response.status == 404) {
-        networkError(response.status);
-    } else if (response.status >= 500) {
-        //DISPLAY SERVER ERROR MESSAGE
-        fatalError("500");
-    } else if (response.status >= 400) {
-        somethingWrong("unexpected 400 error");
-    }
-    let res = await response.json()
-    dispatch(errorActions.clearErr(null))
-    console.log("responded", res)
-    return res
-}
-
-export function refreshTokenError(res: any) {
-    if (res.Error) {
-        if (res.Type == "Refresh Token") {
-            resetAuth();
-        }
-        return res;
-    }
-    if (res.Refreshed == true) {
-        dispatch(authActions.setAuth(res.Tokens))
-    }
-    return res.Data
-}
-
-function resetAuth() {
-    dispatch(authenticatedAction.setAuthenticated(false));
-    dispatch(authActions.clearAuth(null))
 }

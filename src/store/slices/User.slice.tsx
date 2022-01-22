@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Chain, ChainContainer, UserState } from "../../models/User.model";
-import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH, MAX_VIRTUAL_CHAIN_LENGTH, DEFAULT_LEFT_PLACEHOLDER_PADDING, MESSAGE_MAX_WIDTH, MESSAGE_SPACER, DATE_INDICATOR_WIDTH, CHAIN_METERS_WIDTH  } from '../../config/constants';
+import { Message, Chain, UserState } from "../../models/User.model";
+import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH, MAX_VIRTUAL_CHAIN_LENGTH, DEFAULT_LEFT_PLACEHOLDER_PADDING, MESSAGE_MAX_WIDTH, MESSAGE_SPACER, DATE_INDICATOR_WIDTH, CHAIN_METERS_WIDTH, DISPLAY_DURATION_WIDTH  } from '../../config/constants';
 import { MESSAGES_TO_LOAD, NO_LAST_SEEN_OFFSET } from "../../services/Chat-activator.service";
 import { HALF_PIXEL_WIDTH, PIXEL_WIDTH } from "../../config/dimensions";
 import { calcDaysApart } from "../../services/Time.service";
@@ -264,11 +264,7 @@ const userSlice = createSlice({
                     payload.chain.length < EXTRA_CHAIN_LENGTH ? chain.newestChain[0].Created : undefined,
                 );
 
-            let lastMessage = chain.virtualizedChain[chain.virtualizedChain.length - 1];
-            if (calcDaysApart(lastMessage.Created, chainPayload[0].Created) > 0) {
-                if (!lastMessage.dateIndicator) lastMessage.totalWidth += DATE_INDICATOR_WIDTH;
-                lastMessage.dateIndicator = chainPayload[0].Created;
-            }
+            updatePreviousMessageDateIndicator(chain.virtualizedChain[chain.virtualizedChain.length - 1], chainPayload[0].Created);
 
             let diff = chain.virtualizedChain.push(...chainPayload) - MAX_VIRTUAL_CHAIN_LENGTH;
             if (diff > 0) {
@@ -300,12 +296,13 @@ const userSlice = createSlice({
     }
 });
 
-export function parseChain(chain: any[], startKey: number, nextCreated?: number): Chain[] {
-    let tempChain: Chain[] = [];
+export function parseChain(chain: any[], startKey: number, nextCreated?: number): Message[] {
+    let tempChain: Message[] = [];
     let totalNewWidth = 0;
     let startOffset = 0;
     let display;
     let width;
+    let indicatorWidth;
     let daysApart;
     let bytes: number[];
     for (let i = 0; i < chain.length; i++) {
@@ -317,7 +314,8 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
         if (startKey > MESSAGES_TO_LOAD) startKey = startKey - MESSAGES_TO_LOAD;
         nextCreated = chain[i + 1]?.Created || (nextCreated || chain[i].Created);
         daysApart = calcDaysApart(chain[i].Created, nextCreated);
-        width = calculateAudioWidth(bytes.length) + (daysApart > 0 ? DATE_INDICATOR_WIDTH : 0);
+        indicatorWidth = calculateDateIndicatorWidth(daysApart);
+        width = calculateAudioWidth(bytes.length) + indicatorWidth;
         tempChain.push({
             MessageID: chain[i].MessageID,
             UserID: chain[i].UserID,
@@ -327,9 +325,10 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
             Seen: chain[i].Seen,
             Action: chain[i].Action,
             totalWidth: width,
+            dateIndicatorWidth: indicatorWidth,
             offset: startOffset + totalNewWidth,
             key: startKey,
-            dateIndicator: daysApart > 0 ? nextCreated : undefined
+            dateIndicatorCreated: indicatorWidth > 0 ? nextCreated : undefined,
         });
         startKey++;
         totalNewWidth += width;
@@ -337,14 +336,8 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
     return tempChain;
 }
 
-function pushMessage(chain: ChainContainer, payload: any) {
-    if (chain.newestChain.length > 0) {
-        let lastMessage = chain.newestChain[chain.newestChain.length - 1];
-        if (calcDaysApart(lastMessage.Created, payload.chain.Created) > 0) {
-            if (!lastMessage.dateIndicator) lastMessage.totalWidth += DATE_INDICATOR_WIDTH;
-            lastMessage.dateIndicator = payload.chain.Created;
-        }
-    }
+function pushMessage(chain: Chain, payload: any) {
+    if (chain.newestChain.length > 0) updatePreviousMessageDateIndicator(chain.newestChain[chain.newestChain.length - 1], payload.chain.Created);
 
     let bytes: number[] = [];
     for (var i = 0; i < payload.chain.Display.length; i++) {
@@ -360,6 +353,7 @@ function pushMessage(chain: ChainContainer, payload: any) {
         Seen: payload.chain.Seen,
         Action: payload.chain.Action,
         totalWidth: calculateAudioWidth(bytes.length),
+        dateIndicatorWidth: 0,
         offset: 0,
         key: (key > MESSAGES_TO_LOAD ? 1 : key),
     });
@@ -371,7 +365,7 @@ function pushMessage(chain: ChainContainer, payload: any) {
     }
 }
 
-function calculateOffset(chain: ChainContainer) {
+function calculateOffset(chain: Chain) {
     let tempOffset = 0;
     let vcLength = chain.virtualizedChain.length;
     for (let i = 0; i < vcLength + (chain.spaceBetween == 0 ? chain.newestChain.length : 0); i++) {
@@ -386,10 +380,26 @@ function calculateOffset(chain: ChainContainer) {
 }
 
 function calculateAudioWidth(aryLength: number) {
-    let width = 50 + (aryLength * CHAIN_METERS_WIDTH) + 10;
+    let width = DISPLAY_DURATION_WIDTH + (aryLength * CHAIN_METERS_WIDTH) + 10;
     width = Math.min(width, MESSAGE_MAX_WIDTH);
     width += MESSAGE_SPACER;
     return width;
+}
+
+function updatePreviousMessageDateIndicator(lastMessage: Message, nextCreated: number) {
+    let daysApart = calcDaysApart(lastMessage.Created, nextCreated);
+    if (daysApart > 0) {
+        let newDateIndicatorWidth = calculateDateIndicatorWidth(daysApart);
+        lastMessage.totalWidth -= lastMessage.dateIndicatorWidth;
+        lastMessage.totalWidth += newDateIndicatorWidth;
+        lastMessage.dateIndicatorWidth = newDateIndicatorWidth;
+        lastMessage.dateIndicatorCreated = nextCreated;
+    }
+}
+
+function calculateDateIndicatorWidth(daysApart: number) {
+    if (daysApart < 1) return 0;
+    return Math.ceil((((2 * (daysApart - 1))/(daysApart + 20)) + 1) * DATE_INDICATOR_WIDTH);
 }
 
 export const userReducers = userSlice.reducer;

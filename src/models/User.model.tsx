@@ -6,15 +6,15 @@ export interface UserState {
         Friends: Friend[];
         Requests: Requests[];
     };
-    chains: ChainContainer[];
+    chains: Chain[];
     curChainsIndex: number[];
     selectedUserKey: number;
     currentUserKey: number;
 }
 
-export interface ChainContainer {
-    newestChain: Chain[];
-    virtualizedChain: Chain[];
+export interface Chain {
+    newestChain: Message[];
+    virtualizedChain: Message[];
     spaceBetween: number;
     isNewest: boolean;
     virtualIndex: number;
@@ -44,7 +44,7 @@ export interface Friend {
     newMessages: number;
 }
 
-export interface Chain {
+export interface Message {
     MessageID: string;
     UserID: string;
     Created: number;
@@ -53,8 +53,9 @@ export interface Chain {
     Action: number;
     Display: number[];
     totalWidth: number;
+    dateIndicatorWidth: number;
     offset: number;
     key: number;
-    dateIndicator?: number;
+    dateIndicatorCreated?: number;
     first?: boolean;
 }

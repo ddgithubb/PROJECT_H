@@ -44,12 +44,12 @@ export default function Register({ navigation }: any) {
         register(username, email, password).then((res) => {
             if (res.Error) {
                 setRegistering(false);
-                if (res.Type == "Email") {
+                if (res.Problem == "Email") {
                     setEmailErr(true);
-                } else if (res.Type == "Username") {
+                } else if (res.Problem == "Username") {
                     setUsernameErr(true);
                 }
-                setErrorText(res.Type + " already exists!");
+                setErrorText(res.Problem + " already exists!");
             } else {
                 store.dispatch(authActions.setVerifying(true))
                 navigation.reset({index: 0, routes: [{ name: 'Verification' }]});

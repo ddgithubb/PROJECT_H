@@ -1,11 +1,9 @@
-import { AuthState } from "../models/Auth.model";
 import { authActions, authenticatedAction } from "../store/slices/Auth.slice";
 import { store, getState } from "../store/Store";
 import { encryptPassword } from "./Encryption.service";
-import { authPost, resourcePost } from "./Http.service";
+import { authPost } from "./Http.service";
 
 const dispatch = store.dispatch;
-var body: any;
 
 export function register(username: string, email: string, password: string): Promise<any> {
     return authPost("/register", {
@@ -24,16 +22,6 @@ export async function login(email: string, password: string): Promise<any> {
         encPasswordHash: encryptPassword(password),
         deviceToken: getState().auth.deviceToken,
     });
-}
-
-export function authenticate() {
-    let auth: AuthState = getState().auth;
-    if (auth.refreshToken.token != "" && auth.refreshToken.expireAt != 0 && auth.accessToken != "" && auth.sessionID != ""){
-        console.log("authenticating")
-        return resourcePost("/authenticate")
-    } else {
-        dispatch(authActions.clearAuth(null))
-    }
 }
 
 export function verifyEmail(code: string): Promise<any> {
