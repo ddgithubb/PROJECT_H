@@ -21,7 +21,8 @@ export function sendAudio(key: number, display: number[], file: string, duration
         name: "sent_audio.m4a",
     });
     form.append("display", displayBytes);
-    return userPostForm(getChainIDEndpoint(key) + "/send-audio?requestid=" + state.user.relations.Friends[key].RelationID + "&duration=" + duration.toString(), form).then((res) => {
+    form.append("duration", duration.toString());
+    return userPostForm(getChainIDEndpoint(key) + "/send-audio?requestid=" + state.user.relations.Friends[key].RelationID, form).then((res) => {
         if (!res.Error) {
             dispatch(userActions.addMessage({ index: key, chain: {
                 MessageID: res.MessageID,

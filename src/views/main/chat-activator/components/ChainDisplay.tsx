@@ -27,7 +27,7 @@ var curLength: number;
 var curObject;
 var tempOffset: number;
 var tempIndex: number;
-var scrolledToEnd: boolean;
+var scrolledToEndOnce: boolean;
 var toNewest: boolean;
 var leftPadding: number;
 
@@ -45,7 +45,7 @@ export const ChainDisplay = memo(() => {
         thresholdRight = false;
         thresholdLeft = false;
         curLength = -1;
-        scrolledToEnd = false;
+        scrolledToEndOnce = false;
         toNewest = false;
         leftPadding = 0;
         initOffset = chainOffsets[currentIndex] || 0;
@@ -53,7 +53,7 @@ export const ChainDisplay = memo(() => {
     }, [currentIndex]);
 
     useEffect(() => {
-        if (chain?.isNewest) scrolledToEnd = true;
+        if (chain?.isNewest) scrolledToEndOnce = true;
         if (!chain) return;
         if (!chain.isNewest) {
             Animated.spring(
@@ -244,7 +244,7 @@ export const ChainDisplay = memo(() => {
                                             selected={item.MessageID == audioState.curPlayingMessageID} 
                                             isPlaying={item.MessageID == audioState.curPlayingMessageID ? audioState.isPlaying : false} 
                                             isLastItem={chain.newestChain[chain.newestChain.length - 1].MessageID == item.MessageID} 
-                                            lastSeen={!scrolledToEnd && curFriend?.LastSeen == item.Created}
+                                            lastSeen={!scrolledToEndOnce && curFriend?.LastSeen == item.Created}
                                         />
                                     )
                                 })

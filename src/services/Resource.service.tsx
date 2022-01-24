@@ -16,7 +16,7 @@ export const MORE_INFO_RESOURCE = require(ASSETS_PATH + "more-info.png"); //not 
 export const SEE_MORE_RESOURCE = require(ASSETS_PATH + "see_more.png"); //not in use
 export const LINE_MORE_RESOURCE = require(ASSETS_PATH + "line-more.png");
 export const ARROW_MORE_RESOURCE = require(ASSETS_PATH + "arrow.png");
-export const GRID_VIEW_RESOURCE = require(ASSETS_PATH + "grid_view.png");
+export const VOICE_WAVES = require(ASSETS_PATH + "voice-waves.png");
 
 //Action icons
 export const HEART_ACTION_RESOURCE = require(ACTIONS_PATH + "heart.png"); //code 1

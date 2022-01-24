@@ -10,24 +10,28 @@ import { somethingWrong } from '../../../../services/Errors.service';
 import { getState } from '../../../../store/Store';
 import { FlatList } from 'react-native-gesture-handler';
 import { FadeInOutView } from '../../../../components/Animation.components';
-import { SEND_RESOURCE, SEND_DISABLED_RESOURCE, CANCEL_RESOURCE, GRID_VIEW_RESOURCE } from '../../../../services/Resource.service';
+import { SEND_RESOURCE, SEND_DISABLED_RESOURCE, CANCEL_RESOURCE, VOICE_WAVES } from '../../../../services/Resource.service';
 import { millisToMinutesAndSeconds } from '../../../../services/Time.service';
 import { PIXEL_WIDTH } from '../../../../config/dimensions';
 import { METER_AMOUNTS } from '../../../../services/Chat-activator.service';
 import { INPUT_PANEL_HEIGHT } from '../../../../config/constants';
 import { DANGER_COLOR } from '../../../../Main.css';
+import { Audio } from 'expo-av';
+import { deleteAsync } from 'expo-file-system';
+import ReactNativeHapticFeedback from "react-native-haptic-feedback";
 
 const SIDEBAR_WIDTH = 60;
 const METERS_WIDTH = 4;
-//var recordingInstance: Audio.Recording | undefined = undefined; AUDIO_REPLACE_ID
+var recordingInstance: Audio.Recording | undefined = undefined;
 var recording: boolean = false;
 var recordedFile: string = "";
 var recordedDuration: number = -1;
 var curDuration: number = 0;
 var tooShort = true;
-var errorInterval: any = undefined;
 var meters: number[] = [];
 var expectedNextMeter: number;
+var calculatedPowerIntensity: number = 0;
+var errorInterval: any = undefined;
 
 export const InputPanel = memo(({ loading }: { loading: boolean }) => {
 
@@ -46,9 +50,9 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
     useEffect(() => {
         if (loading) {
             if (!disableAction) setDisableAction(true);
-            // if (recordingInstance && recorded) { AUDIO_REPLACE_ID
-            //     resetRecord();
-            // }
+            if (recordingInstance && recorded) {
+                resetRecord();
+            }
         } else {
             if (disableAction) setDisableAction(false);
         }
@@ -57,17 +61,17 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
     const send = async () => {
         setDisableAction(true);
         await stopRecord()
-        // //////////////////////////
+        //////////////////////////
         // let sound = new Audio.Sound();
         // await sound.loadAsync({ uri: recordedFile });
         // await sound.playAsync();
-        // //////////////////////////////
-        await sendAudio(getState().user.currentUserKey, display, recordedFile, recordedDuration).then((res) => {
+        //////////////////////////////
+        await sendAudio(getState().user.currentUserKey, meters, recordedFile, recordedDuration).then((res) => {
             if (res.Error) {
                 setError("Something went wrong!");
             }
         });
-        //deleteAsync(recordedFile);
+        deleteAsync(recordedFile);
         maxLimit ? setMaxLimit(false) : undefined;
         setRecorded(false);
         await prepareRecord();
@@ -75,85 +79,88 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
     }
 
     const prepareRecord = async () => {
-        setDisplay([]);
         meters = [];
         tooShort = true;
-        // if (!recordingInstance) { AUDIO_REPLACE_ID
-        //     recordingInstance = new Audio.Recording();
-        //     try {
-        //         await recordingInstance!.prepareToRecordAsync(
-        //             {
-        //                     isMeteringEnabled: true,
-        //                     android: {
-        //                         extension: ".aac",
-        //                         outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_AAC_ADTS,
-        //                         audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_HE_AAC,
-        //                         sampleRate: 44100,
-        //                         bitRate: 48000,
-        //                         numberOfChannels: 1,
-        //                     },
-        //                     ios: {
-        //                         extension: ".aac",
-        //                         outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC_HE_V2,
-        //                         audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MAX,
-        //                         sampleRate: 44100,
-        //                         bitRate: 48000,
-        //                         numberOfChannels: 1,
-        //                     },
-        //             });
-        //             recordingInstance!.setOnRecordingStatusUpdate(updateFunction);
-        //             recordingInstance!.setProgressUpdateInterval(100);
-        //     } catch (err) {
-        //         somethingWrong(err);
-        //     }
-        // }
+        expectedNextMeter = METERING_INTERVAL_DURATION;
+        curDuration = 0;
+        if (!recordingInstance) {
+            recordingInstance = new Audio.Recording();
+            try {
+                await recordingInstance!.prepareToRecordAsync(
+                    {
+                            isMeteringEnabled: true,
+                            android: {
+                                extension: ".aac",
+                                outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_AAC_ADTS,
+                                audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_HE_AAC,
+                                sampleRate: 44100,
+                                bitRate: 48000,
+                                numberOfChannels: 1,
+                            },
+                            ios: {
+                                extension: ".aac",
+                                outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC_HE_V2,
+                                audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MAX,
+                                sampleRate: 44100,
+                                bitRate: 48000,
+                                numberOfChannels: 1,
+                            },
+                            web: {}
+                    });
+                    recordingInstance!.setOnRecordingStatusUpdate(updateFunction);
+                    recordingInstance!.setProgressUpdateInterval(50);
+            } catch (err) {
+                somethingWrong(err);
+            }
+        }
     }
 
-    // const updateFunction = async (status: Audio.RecordingStatus) => { AUDIO_REPLACE_ID
-    //     if (status.isRecording) {
-    //         if (status.durationMillis < 5 * 60000) {
-    //             if (status.durationMillis >= expectedNextMeter) {
-    //                 tooShort = false;
-    //                 curDuration = status.durationMillis;
-    //                 expectedNextMeter += METERING_INTERVAL_DURATION;
-    //                 meters.push(Math.ceil((status.metering! + INPUT_PANEL_HEIGHT - 4) / 1.6));
-    //                 setDisplay([...meters]);
-    //                 flatlistRef.current.scrollToEnd();
-    //             }
-    //         } else {
-    //             try {
-    //                 await recordingInstance!.pauseAsync();
-    //             } catch(err) {
-    //                 somethingWrong(err);
-    //             }
-    //             setMaxLimit(true);
-    //             setError("MAX LIMIT")
-    //             recording = false;
-    //         }
-    //     }
-    // }
+    const updateFunction = async (status: Audio.RecordingStatus) => {
+        if (status.isRecording) {
+            if (status.durationMillis < 5 * 60000) {
+                if (status.durationMillis >= expectedNextMeter) {
+                    tooShort = false;
+                    curDuration = status.durationMillis;
+                    expectedNextMeter += METERING_INTERVAL_DURATION;
+                    calculatedPowerIntensity = Math.ceil(Math.pow(10, status.metering! / 60) * 100);
+                    meters.push(calculatedPowerIntensity);
+                    setDisplay([...meters]);
+                    flatlistRef.current.scrollToEnd();
+                }
+            } else {
+                try {
+                    await recordingInstance!.pauseAsync();
+                } catch(err) {
+                    somethingWrong(err);
+                }
+                setMaxLimit(true);
+                setError("MAX LIMIT")
+                recording = false;
+            }
+        }
+    }
 
     const record = () => {
         if (!recording) {
+            ReactNativeHapticFeedback.trigger("impactLight", {
+                enableVibrateFallback: true,
+                ignoreAndroidSystemSettings: true
+            });
             Animated.timing(recordingBarAnim, {
                 toValue: 1,
                 duration: 250,
                 useNativeDriver: true,
                 easing: Easing.out(Easing.quad),
             }).start();
-            if (!recorded) {
-                expectedNextMeter = METERING_INTERVAL_DURATION;
-                curDuration = 0;
-                setRecorded(true);
-            }
+            if (!recorded) setRecorded(true);
             recording = true;
-            // requestAnimationFrame(() => { AUDIO_REPLACE_ID
-            //     try {
-            //         recordingInstance!.startAsync();
-            //     } catch(err) {
-            //         somethingWrong(err);
-            //     }
-            // });
+            requestAnimationFrame(() => {
+                try {
+                    recordingInstance!.startAsync();
+                } catch(err) {
+                    somethingWrong(err);
+                }
+            });
         }  
     }
 
@@ -165,51 +172,51 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                 useNativeDriver: true,
                 easing: Easing.out(Easing.quad),
             }).start();
-            // if (recordingInstance) { AUDIO_REPLACE_ID
-            //     recording = false;
-            //     if (tooShort) {
-            //         await resetRecord();
-            //     } else {
-            //         requestAnimationFrame(() => {
-            //             try {
-            //                 recordingInstance!.pauseAsync();
-            //             } catch(err) {
-            //                 somethingWrong(err);
-            //             }
-            //         });
-            //     }
-            // } else {
-            //     await resetRecord();
-            // }
+            if (recordingInstance) {
+                recording = false;
+                if (tooShort) {
+                    await resetRecord();
+                } else {
+                    requestAnimationFrame(() => {
+                        try {
+                            recordingInstance!.pauseAsync();
+                        } catch(err) {
+                            somethingWrong(err);
+                        }
+                    });
+                }
+            } else {
+                await resetRecord();
+            }
         }
     }
 
     const stopRecord = async () => {
-        // try { AUDIO_REPLACE_ID
-        //     await recordingInstance!.stopAndUnloadAsync();
-        //     recordedFile = recordingInstance!.getURI()!;
-        //     recordedDuration = recordingInstance!._finalDurationMillis;
-        //     console.log(await FileSystem.getInfoAsync(recordedFile))
-        //     recordingInstance = undefined;
-        // } catch(err) {
-        //     somethingWrong(err);
-        // }
+        try {
+            await recordingInstance!.stopAndUnloadAsync();
+            recordedFile = recordingInstance!.getURI()!;
+            recordedDuration = recordingInstance!._finalDurationMillis;
+            recordingInstance = undefined;
+        } catch(err) {
+            somethingWrong(err);
+        }
     }
 
     const deleteRecord = async () => {
-        // try { AUDIO_REPLACE_ID
-        //     await stopRecord();
-        //     deleteAsync(recordedFile);
-        // } catch(err) {
-        //     await recordingInstance?._cleanupForUnloadedRecorder({durationMillis: 0} as any);
-        //     recordingInstance = undefined;
-        // }
+        try {
+            await stopRecord();
+            deleteAsync(recordedFile);
+        } catch(err) {
+            await recordingInstance?._cleanupForUnloadedRecorder({durationMillis: 0} as any);
+            recordingInstance = undefined;
+        }
     }
 
     const resetRecord = async () => {
-        setDisableAction(true); //AUDIO_REPLACE_ID
+        setDisableAction(true);
         setRecorded(false);
-        maxLimit ? setMaxLimit(false) : undefined;
+        setDisplay([]);
+        if (maxLimit) setMaxLimit(false);
         await deleteRecord();
         await prepareRecord();
         setDisableAction(false);
@@ -241,7 +248,7 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                 justifyContent: "center", 
             }}>
                 {
-                    !recorded ? <Icon source={GRID_VIEW_RESOURCE} tint={"#AAAAAA"} style={{ position: "absolute" }} dimensions={40} /> : undefined
+                    !recorded ? <Icon source={VOICE_WAVES} tint={"#DDDDDD"} style={{ position: "absolute" }} dimensions={30} /> : undefined
                 }
                 <TouchableOpacity
                     disabled={maxLimit || disableAction} 
@@ -276,7 +283,7 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                             )}
                         />
                 </TouchableOpacity>
-                <Animated.View style={{ transform: [{ scaleX: recordingBarAnim }], position: "absolute", width: 100, top: 9, borderRadius: 2, height: 5, backgroundColor: "#3AB34A" }} />
+                <Animated.View style={{ transform: [{ scaleX: recordingBarAnim }], position: "absolute", width: (PIXEL_WIDTH - SIDEBAR_WIDTH) / 2, top: 10, borderRadius: 1, height: 4, backgroundColor: "#46B180" }} />
             </View>
             <FadeInOutView visible={errorText != ""} style={{ position: "absolute", bottom: 18, left: 10, width: PIXEL_WIDTH - SIDEBAR_WIDTH, flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <DangerText style={{ fontWeight: 'bold', fontSize: 12 }}>{ errorText }</DangerText>
@@ -323,6 +330,6 @@ const Meters = memo(({ item }: any) => {
     }, []);
 
     return (
-        <Animated.View style={{ transform: [{ scaleY: scaleYAnim }], width: METERS_WIDTH, borderRadius: 50, backgroundColor: "#EFEFEF", height: Math.floor((item/100) * 120) + 10 }} />
+        <Animated.View style={{ transform: [{ scaleY: scaleYAnim }], width: METERS_WIDTH, borderRadius: 50, backgroundColor: "#EFEFEF", height: (item / 100) * (INPUT_PANEL_HEIGHT - 25) + 3 }} />
     )
 });

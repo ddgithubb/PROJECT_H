@@ -296,7 +296,7 @@ const userSlice = createSlice({
     }
 });
 
-export function parseChain(chain: any[], startKey: number, nextCreated?: number): Message[] {
+export function parseChain(chain: any[], startKey: number, rightAdjacentCreated?: number): Message[] {
     let tempChain: Message[] = [];
     let totalNewWidth = 0;
     let startOffset = 0;
@@ -304,6 +304,7 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
     let width;
     let indicatorWidth;
     let daysApart;
+    let nextCreated;
     let bytes: number[];
     for (let i = 0; i < chain.length; i++) {
         display = chain[i].Display as string
@@ -312,7 +313,7 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
             bytes[j] = display.charCodeAt(j);
         }
         if (startKey > MESSAGES_TO_LOAD) startKey = startKey - MESSAGES_TO_LOAD;
-        nextCreated = chain[i + 1]?.Created || (nextCreated || chain[i].Created);
+        nextCreated = chain[i + 1]?.Created || (rightAdjacentCreated || chain[i].Created);
         daysApart = calcDaysApart(chain[i].Created, nextCreated);
         indicatorWidth = calculateDateIndicatorWidth(daysApart);
         width = calculateAudioWidth(bytes.length) + indicatorWidth;
@@ -339,6 +340,7 @@ export function parseChain(chain: any[], startKey: number, nextCreated?: number)
 function pushMessage(chain: Chain, payload: any) {
     if (chain.newestChain.length > 0) updatePreviousMessageDateIndicator(chain.newestChain[chain.newestChain.length - 1], payload.chain.Created);
 
+    console.log(payload)
     let bytes: number[] = [];
     for (var i = 0; i < payload.chain.Display.length; i++) {
         bytes[i] = payload.chain.Display.charCodeAt(i);
