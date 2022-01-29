@@ -11,8 +11,8 @@ import { AppState } from "../models/App.model";
 import { appReducers } from "./slices/App.slice";
 import { userReducers } from "./slices/User.slice";
 import { UserState } from "../models/User.model";
-import { AudioState } from "../models/Audio.model";
-import { audioReducers } from "./slices/Audio.slice";
+import { MediaState } from "../models/Media.model";
+import { mediaReducers } from "./slices/Media.slice";
 
 const storage = createSensitiveStorage({
     keychainService: "appKeychain",
@@ -25,7 +25,7 @@ export type GlobalState = {
     errors: ErrorState;
     app: AppState;
     user: UserState;
-    audio: AudioState;
+    media: MediaState;
 }
 
 export function getState(): GlobalState {
@@ -45,7 +45,7 @@ const reducer: Reducer<any & PersistPartial, Action<any>> = persistCombineReduce
     errors: errorReducers,
     app: appReducers,
     user: userReducers,
-    audio: audioReducers,
+    media: mediaReducers,
 });
 
 const store = createStore(reducer);

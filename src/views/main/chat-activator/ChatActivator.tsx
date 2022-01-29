@@ -4,10 +4,10 @@ import { getChain } from '../../../services/Chains.service';
 import { memo } from 'react';
 import { getState, GlobalState } from '../../../store/Store';
 import { useSelector } from 'react-redux';
-import { ChainDisplay } from './components/ChainDisplay';
+import { ChainDisplay } from './chain-display/ChainDisplay';
 import { STATIC_ACTIVATOR_HEIGHT, CHAIN_HEIGHT } from '../../../config/constants';
-import { InputPanel } from './components/InputPanel';
-import { ActionBar } from './components/ActionBar';
+import { InputPanel } from './input-panel/InputPanel';
+import { MediaPanel } from './media-panel/MediaPanel';
 
 var currentIndex = -1;
 
@@ -95,10 +95,10 @@ function ChatActivator() {
 
     return (
         <Animated.View style={[{ position: "absolute", bottom: 0, transform: [{ translateY: transformAnim }], width: "100%" }]} >
-            <Animated.View style={{ transform: [{ translateY: chainAnim }], flexDirection: "row", alignItems: "flex-end", paddingBottom: 10, justifyContent: "center", width: "100%" }}>
+            <Animated.View style={{ transform: [{ translateY: chainAnim }], flexDirection: "row", alignItems: "center", paddingBottom: 10, justifyContent: "center", width: "100%" }}>
                 <ChainDisplay />
             </Animated.View>
-            <ActionBar loading={loading} />
+            <MediaPanel loading={loading} />
             <InputPanel loading={loading} />
         </Animated.View>
     );

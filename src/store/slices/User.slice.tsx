@@ -382,7 +382,7 @@ function calculateOffset(chain: Chain) {
 }
 
 function calculateAudioWidth(aryLength: number) {
-    let width = DISPLAY_DURATION_WIDTH + (aryLength * CHAIN_METERS_WIDTH) + 10;
+    let width = DISPLAY_DURATION_WIDTH + (aryLength * CHAIN_METERS_WIDTH) + 5;
     width = Math.min(width, MESSAGE_MAX_WIDTH);
     width += MESSAGE_SPACER;
     return width;

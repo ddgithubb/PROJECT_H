@@ -12,7 +12,7 @@ import { register } from '../../services/Auth.service';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { store } from '../../store/Store';
 import { authActions } from '../../store/slices/Auth.slice';
-import { REJECT_RESOURCE, CHECK_RESOURCE } from '../../services/Resource.service';
+import { REJECT_ICON, CHECK_ICON } from '../../services/Resource.service';
 
 export default function Register({ navigation }: any) {
 
@@ -68,7 +68,7 @@ export default function Register({ navigation }: any) {
                     {
                         emailErr != undefined ? (
                             <FadeInView style={{ position: "absolute", right: 10 }} >
-                                <Icon source={emailErr ? REJECT_RESOURCE: CHECK_RESOURCE}/>
+                                <Icon source={emailErr ? REJECT_ICON: CHECK_ICON}/>
                             </FadeInView>
                         ) : undefined
                     }
@@ -79,7 +79,7 @@ export default function Register({ navigation }: any) {
                     {
                         usernameErr != undefined ? (
                             <FadeInView style={{ position: "absolute", right: 10 }} >
-                                <Icon source={usernameErr ? REJECT_RESOURCE: CHECK_RESOURCE}/>
+                                <Icon source={usernameErr ? REJECT_ICON: CHECK_ICON}/>
                             </FadeInView>
                         ) : undefined
                     }
@@ -89,7 +89,7 @@ export default function Register({ navigation }: any) {
                     {
                         passwordErr != undefined ? (
                             <FadeInView style={{ position: "absolute", right: 10 }} >
-                                <Icon source={passwordErr ? REJECT_RESOURCE: CHECK_RESOURCE}/>
+                                <Icon source={passwordErr ? REJECT_ICON: CHECK_ICON}/>
                             </FadeInView>
                         ) : undefined
                     }

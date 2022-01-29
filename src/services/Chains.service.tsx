@@ -7,7 +7,7 @@ import { sendMessage } from "./Websocket-send.service";
 
 const dispatch = store.dispatch
 
-function getChainIDEndpoint(key: number) {
+export function getChainIDEndpoint(key: number) {
     return "/chain/" + getState().user.relations.Friends[key].ChainID;
 }
 
@@ -22,7 +22,7 @@ export function sendAudio(key: number, display: number[], file: string, duration
     });
     form.append("display", displayBytes);
     form.append("duration", duration.toString());
-    return userPostForm(getChainIDEndpoint(key) + "/send-audio?requestid=" + state.user.relations.Friends[key].RelationID, form).then((res) => {
+    return userPostForm(getChainIDEndpoint(key) + "/audio", form).then((res) => {
         if (!res.Error) {
             dispatch(userActions.addMessage({ index: key, chain: {
                 MessageID: res.MessageID,

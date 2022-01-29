@@ -8,14 +8,14 @@ import { getState, GlobalState } from '../../../../store/Store';
 import { TouchableHighlight } from 'react-native-gesture-handler';
 import ScrollView from '../../../../components/InfiniteHorizontalScrollView/ScrollView';
 import { useDispatch, useSelector } from 'react-redux';
-import { AudioResponse } from './AudioResponse';
+import { AudioMessage } from '../message/audio-message/AudioMessage';
 import { GET_EXTRA_THRESHOLD, MESSAGE_SPACER, DEFAULT_LEFT_PLACEHOLDER_PADDING } from '../../../../config/constants';
 import { getExtraChain } from '../../../../services/Chains.service';
 import { EXTRA_CHAIN_LENGTH } from '../../../../config/constants';
-import { PlaceholderGenerator } from './PlaceholderGenerator';
+import { PlaceholderGenerator } from '../message/PlaceholderGenerator';
 import { userActions } from '../../../../store/slices/User.slice';
 import { MESSAGES_LOAD_LEFT, MESSAGES_LOAD_RIGHT, MESSAGES_TO_LOAD } from '../../../../services/Chat-activator.service';
-import { BACK_RESOURCE } from '../../../../services/Resource.service';
+import { BACK_ICON } from '../../../../services/Resource.service';
 
 var chainOffsets: (number | undefined)[] = []; 
 
@@ -34,7 +34,7 @@ var leftPadding: number;
 export const ChainDisplay = memo(() => {
     const currentIndex = useSelector(({ user }: GlobalState) => user.currentUserKey);
     const chain = useSelector(({ user }: GlobalState) => user.chains[currentIndex]);
-    const audioState = useSelector(({ audio }: GlobalState) => audio);
+    const mediaState = useSelector(({ media: audio }: GlobalState) => audio);
     const chainRef = useRef<any>();
     const [ disabled, setDisabled ] = useState(false);
     const isNewestAnimation = useRef<Animated.Value>(new Animated.Value(70)).current;
@@ -214,7 +214,7 @@ export const ChainDisplay = memo(() => {
                     <>
                     <ScrollView
                         ref={chainRef} 
-                        contentContainerStyle={{ paddingLeft: MESSAGE_SPACER, paddingRight: (chain.spaceBetween == 0 ? MESSAGE_SPACER : 0)}} 
+                        contentContainerStyle={{ paddingLeft: MESSAGE_SPACER, paddingRight: (chain.spaceBetween == 0 ? MESSAGE_SPACER : 0) }} 
                         maintainVisibleContentPosition={{
                             minIndexForVisible: 2
                         }} 
@@ -237,12 +237,10 @@ export const ChainDisplay = memo(() => {
                             chain.newestChain.length > 0 ? (
                                 (chain.spaceBetween == 0 ? chain.virtualizedChain.concat(chain.newestChain) : chain.virtualizedChain).slice(Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT), Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT) + MESSAGES_TO_LOAD).map((item, index) => {  //.slice(Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT), Math.max(0, chain.virtualIndex - MESSAGES_LOAD_LEFT) + MESSAGES_TO_LOAD)
                                     return (
-                                        <AudioResponse 
+                                        <AudioMessage 
                                             item={item}
                                             key={item.key}
-                                            chainID={curFriend!.ChainID} 
-                                            selected={item.MessageID == audioState.curPlayingMessageID} 
-                                            isPlaying={item.MessageID == audioState.curPlayingMessageID ? audioState.isPlaying : false} 
+                                            selected={item.MessageID == mediaState.curPlayingMessage?.MessageID} 
                                             isLastItem={chain.newestChain[chain.newestChain.length - 1].MessageID == item.MessageID} 
                                             lastSeen={!scrolledToEndOnce && curFriend?.LastSeen == item.Created}
                                         />
@@ -257,7 +255,7 @@ export const ChainDisplay = memo(() => {
                     </ScrollView>
                     <Animated.View style={{ position: "absolute", right: 10, bottom: 13, transform: [{ translateX: isNewestAnimation }] }}>
                         <TouchableHighlight disabled={disabled} underlayColor={"#2A2A2A"} activeOpacity={0.5} onPress={goToNewest} style={{ borderRadius: 50, width: 40, height: 40, backgroundColor: "#2F2F2F", shadowColor: "#000", shadowOffset: { width: 0, height: 1,}, shadowOpacity: 0.3, shadowRadius: 2.5, elevation: 4, alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon source={BACK_RESOURCE} tint={"#FAFAFA"} style={{ transform: [{ rotateY: '180deg' }] }} />
+                            <Icon source={BACK_ICON} tint={"#FAFAFA"} style={{ transform: [{ rotateY: '180deg' }] }} />
                         </TouchableHighlight>
                     </Animated.View>
                     </>

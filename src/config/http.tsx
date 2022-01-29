@@ -12,6 +12,7 @@ const USER_PATH: string = URI + "/user";
 const NOTIF_TIME: number = 3000;
 
 const HEADER_REFRESHED_NAME = "x-refreshed";
+const HEADER_REFRESH_NAME = "x-refresh";
 const HEADER_SESSION_ID_NAME = "x-session-id";
 const HEADER_REFRESH_TOKEN_NAME = "x-refresh-token";
 const HEADER_REFRESH_TOKEN_EXPIRE_NAME = "x-refresh-token-expire";
@@ -19,12 +20,13 @@ const HEADER_ACCESS_TOKEN_NAME = "x-access-token";
 
 var state: GlobalState;
 
-function setAuthHeaders(options: any) {
+function populateAuthHeaders(options: any, refresh: boolean = true) {
     state = getState();
     options.headers['Authorization'] = 'Bearer ' + state.auth.accessToken;
     options.headers[HEADER_SESSION_ID_NAME] = state.auth.sessionID;
     options.headers[HEADER_REFRESH_TOKEN_NAME] = state.auth.refreshToken.token;
     options.headers[HEADER_REFRESH_TOKEN_EXPIRE_NAME] = state.auth.refreshToken.expireAt.toString();
+    options.headers[HEADER_REFRESH_NAME] = refresh;
     return options;
 }
 
@@ -40,7 +42,7 @@ function httpPostOptions(body?: any) {
 }
 
 function httpPostAuthOptions(body?: any) {
-    return setAuthHeaders({
+    return populateAuthHeaders({
         method: 'POST',
         headers: {
             'Accept': 'application/json',
@@ -51,7 +53,7 @@ function httpPostAuthOptions(body?: any) {
 }
 
 function httpGetAuthOptions() {
-    return setAuthHeaders({
+    return populateAuthHeaders({
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -61,7 +63,7 @@ function httpGetAuthOptions() {
 }
 
 function httpPutAuthOptions(body?: any) {
-    return setAuthHeaders({
+    return populateAuthHeaders({
         method: 'PUT',
         headers: {
             'Accept': 'application/json',
@@ -72,7 +74,7 @@ function httpPutAuthOptions(body?: any) {
 }
 
 function httpPostAuthFormOptions(body: FD) {
-    return setAuthHeaders({
+    return populateAuthHeaders({
         method: 'POST',
         headers: {
             'Accept': 'application/json',
@@ -105,6 +107,7 @@ export {
     HEADER_REFRESH_TOKEN_NAME, 
     HEADER_REFRESH_TOKEN_EXPIRE_NAME, 
     HEADER_ACCESS_TOKEN_NAME, 
+    populateAuthHeaders,
     httpPostOptions, 
     httpPostAuthOptions, 
     httpGetAuthOptions, 

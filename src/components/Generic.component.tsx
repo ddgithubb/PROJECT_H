@@ -47,7 +47,7 @@ export const Link = memo((props: Text['props']) => {
     </Pressable>
 });
 
-export const Icon = memo((props: Image['props'] & any) => {
+export const Icon = memo((props: Image['props'] & { dimensions?: number, tint?: string }) => {
     const { style, dimensions, tint, ...otherProps } = props;
     return <Image style={[{ resizeMode: "contain", height: dimensions || 24, width: dimensions || 24, tintColor: tint }, style]} fadeDuration={0} {...otherProps} />
 });

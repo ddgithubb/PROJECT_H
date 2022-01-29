@@ -10,18 +10,18 @@ import { somethingWrong } from '../../../../services/Errors.service';
 import { getState } from '../../../../store/Store';
 import { FlatList } from 'react-native-gesture-handler';
 import { FadeInOutView } from '../../../../components/Animation.components';
-import { SEND_RESOURCE, SEND_DISABLED_RESOURCE, CANCEL_RESOURCE, VOICE_WAVES } from '../../../../services/Resource.service';
+import { SEND_ICON, SEND_DISABLED_ICON, CANCEL_ICON, VOICE_WAVES_ICON } from '../../../../services/Resource.service';
 import { millisToMinutesAndSeconds } from '../../../../services/Time.service';
 import { PIXEL_WIDTH } from '../../../../config/dimensions';
-import { METER_AMOUNTS } from '../../../../services/Chat-activator.service';
+import { METERS_WIDTH } from '../../../../services/Chat-activator.service';
 import { INPUT_PANEL_HEIGHT } from '../../../../config/constants';
 import { DANGER_COLOR } from '../../../../Main.css';
 import { Audio } from 'expo-av';
 import { deleteAsync } from 'expo-file-system';
 import ReactNativeHapticFeedback from "react-native-haptic-feedback";
+import { Meters } from './InputMeters';
 
 const SIDEBAR_WIDTH = 60;
-const METERS_WIDTH = 4;
 var recordingInstance: Audio.Recording | undefined = undefined;
 var recording: boolean = false;
 var recordedFile: string = "";
@@ -154,7 +154,8 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
             }).start();
             if (!recorded) setRecorded(true);
             recording = true;
-            requestAnimationFrame(() => {
+            requestAnimationFrame(async () => {
+                //Prevent spam Using setInterval refresh like setError
                 try {
                     recordingInstance!.startAsync();
                 } catch(err) {
@@ -247,9 +248,9 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                 alignItems: "center", 
                 justifyContent: "center", 
             }}>
-                {
-                    !recorded ? <Icon source={VOICE_WAVES} tint={"#DDDDDD"} style={{ position: "absolute" }} dimensions={30} /> : undefined
-                }
+                <FadeInOutView visible={!recorded} style={{ position: "absolute" }} >
+                    <Icon source={VOICE_WAVES_ICON} tint={"#DDDDDD"} dimensions={30} /> 
+                </FadeInOutView>
                 <TouchableOpacity
                     disabled={maxLimit || disableAction} 
                     onPressIn={record} 
@@ -272,8 +273,7 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                             contentContainerStyle={{ paddingRight: 10, height: "100%", flexGrow: 1, alignItems: "center", paddingVertical: 2, justifyContent: "flex-start" }}
                             horizontal={true} 
                             removeClippedSubviews={true} 
-                            showsHorizontalScrollIndicator={false} 
-                            initialNumToRender={METER_AMOUNTS} 
+                            showsHorizontalScrollIndicator={false}  
                             maxToRenderPerBatch={5} 
                             windowSize={1} 
                             scrollEnabled={false}
@@ -293,16 +293,16 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
                     <Subtitle style={{ color: "#E8E8E8", fontSize: 15, marginTop: 3, marginBottom: 1, fontWeight: "bold" }}>{ millisToMinutesAndSeconds(curDuration) }</Subtitle>
                     <RippleTouch borderless borderRadius={12} opacity={0.5} onPress={resetRecord} disabled={disableAction || !recorded} RGBcolor={"173,35,35"} >
                         <View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}>
-                            <Icon source={CANCEL_RESOURCE} tint={"#EDEDED"} dimensions={18} />
+                            <Icon source={CANCEL_ICON} tint={"#EDEDED"} dimensions={18} />
                         </View>
                     </RippleTouch>
                 </FadeInOutView>
                 <View style={{ position: "absolute", bottom: 15 }} >
-                    <Icon source={SEND_DISABLED_RESOURCE} dimensions={30} />
+                    <Icon source={SEND_DISABLED_ICON} dimensions={30} />
                 </View>
                 <RippleTouch borderless opactiy={0.3} onPress={send} disabled={disableAction || !recorded}>
                     <FadeInOutView visible={!disableAction && recorded} style={{ position: "absolute", bottom: 15 }} >
-                        <Icon source={!disableAction && recorded ? SEND_RESOURCE: SEND_DISABLED_RESOURCE} dimensions={30} />
+                        <Icon source={!disableAction && recorded ? SEND_ICON: SEND_DISABLED_ICON} dimensions={30} />
                     </FadeInOutView>
                 </RippleTouch>
             </View>
@@ -313,23 +313,3 @@ export const InputPanel = memo(({ loading }: { loading: boolean }) => {
 function areEqual(prevProps: any, nextProps: any) {
     return prevProps.loading == nextProps.loading;
 }
-
-const Meters = memo(({ item }: any) => {
-    
-    const scaleYAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        Animated.spring(
-        scaleYAnim,
-        {
-            toValue: 1,
-            useNativeDriver: true,
-            bounciness: 10
-        }
-        ).start();
-    }, []);
-
-    return (
-        <Animated.View style={{ transform: [{ scaleY: scaleYAnim }], width: METERS_WIDTH, borderRadius: 50, backgroundColor: "#EFEFEF", height: (item / 100) * (INPUT_PANEL_HEIGHT - 25) + 3 }} />
-    )
-});

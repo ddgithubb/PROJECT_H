@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FlatList } from 'react-native-gesture-handler';
 import { COLUMN_AMOUNT, RENDER_AMOUNT, ITEM_DIMENSION } from '../../services/Chat.service';
-import { CANCEL_RESOURCE, SEARCH_MORE_RESOURCE } from '../../services/Resource.service';
+import { CANCEL_ICON, SEARCH_MORE_ICON } from '../../services/Resource.service';
 import { Animated, Easing, Keyboard, StyleSheet, View } from 'react-native';
 import { GlobalState } from '../../store/Store';
 import { InfoButton } from '../../components/Form.components';
@@ -116,14 +116,14 @@ export default function Chat({ navigation }: any) {
             <Header>
                 <HeaderViews style={{ alignItems: "flex-start" }}><Subtitle>|Profile|</Subtitle></HeaderViews>
                 <HeaderViews style={{ alignItems: "center", flexBasis: 110 }}><Heading style={{ fontSize: 25, fontWeight:"bold" }}>PROJECT H</Heading></HeaderViews>
-                <HeaderViews style={{ alignItems: "flex-end" }}><ClickView action={() => navigation.navigate("Requests")}><Icon source={ SEARCH_MORE_RESOURCE } dimensions={30}/></ClickView></HeaderViews>
+                <HeaderViews style={{ alignItems: "flex-end" }}><ClickView action={() => navigation.navigate("Requests")}><Icon source={ SEARCH_MORE_ICON } dimensions={30}/></ClickView></HeaderViews>
             </Header>
             <ContainerView style={{ paddingHorizontal: 15 }}>
                 <SearchBar placeholder="Find friend" value={searchText} onChangeText={(text: string) => setSearchText(text)}/>
                 {
                     searchText != "" ? (
                         <ClickView style={{ position: "absolute", right: 20, top: 3, padding: 5 }} action={() => { setSearchText(""), Keyboard.dismiss() }}>
-                            <Icon source={ CANCEL_RESOURCE } dimensions={20}></Icon>
+                            <Icon source={ CANCEL_ICON } dimensions={20}></Icon>
                         </ClickView>
                     ) : <></>
                 }

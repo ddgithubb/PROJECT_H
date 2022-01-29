@@ -8,6 +8,8 @@ target 'PROJECT_H' do
   use_expo_modules!
   pod 'RNReactNativeHapticFeedback', :path => '../node_modules/react-native-haptic-feedback'
 
+  pod 'react-native-video', :path => '../node_modules/react-native-video'
+
   post_integrate do |installer|
     begin
       expo_patch_react_imports!(installer)

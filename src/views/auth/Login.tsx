@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { FadeInView } from '../../components/Animation.components';
 import { login } from '../../services/Auth.service';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { REJECT_RESOURCE, CHECK_RESOURCE } from '../../services/Resource.service';
+import { REJECT_ICON, CHECK_ICON } from '../../services/Resource.service';
 import { initializeApp } from '../../services/Initialize.service';
 import { useDispatch } from 'react-redux';
 import { authActions } from '../../store/slices/Auth.slice';
@@ -62,7 +62,7 @@ export default function Login({ navigation }: any) {
                     {
                         emailErr != undefined ? (
                             <FadeInView style={{ position: "absolute", right: 10 }} >
-                                <Icon source={emailErr ? REJECT_RESOURCE : CHECK_RESOURCE}/>
+                                <Icon source={emailErr ? REJECT_ICON : CHECK_ICON}/>
                             </FadeInView>
                         ) : undefined
                     }

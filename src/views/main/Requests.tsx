@@ -3,7 +3,7 @@ import { FlatList } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ClickView } from "../../components/Animation.components";
 import { ContainerView, EmptyComponent, Header, HeaderViews, Icon, RippleTouch, SearchBar, SubHeading, Subtitle } from "../../components/Generic.component";
-import { BACK_RESOURCE, CANCEL_RESOURCE } from "../../services/Resource.service";
+import { BACK_ICON, CANCEL_ICON } from "../../services/Resource.service";
 import { REQUEST_ROW_AMOUNT } from '../../services/Chat.service';
 import { PhotoView } from "../../components/Chat.components";
 import { ActivityIndicator, Keyboard, View } from "react-native";
@@ -215,7 +215,7 @@ export default function RequestComponent({ navigation }: any) {
     return (
         <SafeAreaView style={{ width: "100%", flex: 1 }}>
             <Header>
-                <HeaderViews style={{ alignItems: "flex-start" }}><ClickView action={() => navigation.goBack()}><Icon source={ BACK_RESOURCE } dimensions={30}/></ClickView></HeaderViews>
+                <HeaderViews style={{ alignItems: "flex-start" }}><ClickView action={() => navigation.goBack()}><Icon source={ BACK_ICON } dimensions={30}/></ClickView></HeaderViews>
                 <HeaderViews style={{ alignItems: "center", flexBasis: 110 }}><SubHeading>Requests</SubHeading></HeaderViews>
                 <HeaderViews style={{ alignItems: "flex-end" }}></HeaderViews>
             </Header>
@@ -224,7 +224,7 @@ export default function RequestComponent({ navigation }: any) {
                 {
                     searchText != "" ? (
                         <ClickView style={{ position: "absolute", right: 21, top: 5, padding: 5 }} action={() => { setSearchText(""), Keyboard.dismiss() }}>
-                            <Icon source={ CANCEL_RESOURCE } dimensions={25}></Icon>
+                            <Icon source={ CANCEL_ICON } dimensions={25}></Icon>
                         </ClickView>
                     ) : <></>
                 }

@@ -17,9 +17,8 @@ export const PlaceholderGenerator = memo(({ leftPadding, width, rightPadding }: 
             if (curWidth <= MESSAGE_MAX_WIDTH) {
                 temp.push(getPlaceholder(curWidth, i));
                 break;
-            } else if (curWidth <= MIN_WIDTH + MESSAGE_MAX_WIDTH) {
-                temp.push(getPlaceholder(curWidth / 2, i));
-                temp.unshift(getPlaceholder(curWidth / 2, ++i));
+            } else if (curWidth <= MIN_WIDTH + MESSAGE_MAX_WIDTH - 40) {
+                temp.unshift(getPlaceholder(curWidth, i));
                 break;
             }
             let width = (Math.random() * VAR_RANGE) + MIN_WIDTH;

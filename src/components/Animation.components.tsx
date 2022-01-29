@@ -42,34 +42,26 @@ export function FadeInOutView(props: any) {
 
   useEffect(() => {
     if (visible) {
-      fadeIn();
+      Animated.timing(
+        fadeAnim,
+        {
+          toValue: 1,
+          duration: props.duration || 80,
+          useNativeDriver: true,
+        }
+      ).start();
     } else {
-      fadeOut();
+      Animated.timing(
+        fadeAnim,
+        {
+          toValue: 0,
+          duration: Math.abs(props.duration - 30) || 50,
+          useNativeDriver: true,
+        }
+      ).start();
     }
   }, [visible]);
-
-  const fadeIn = () => {
-    Animated.timing(
-      fadeAnim,
-      {
-        toValue: 1,
-        duration: props.duration || 80,
-        useNativeDriver: true,
-      }
-    ).start();
-  }
-
-  const fadeOut = () => {
-    Animated.timing(
-      fadeAnim,
-      {
-        toValue: 0,
-        duration: Math.abs(props.duration - 30) || 50,
-        useNativeDriver: true,
-      }
-    ).start();
-  }
-
+  
   return (
     <Animated.View style={[style, {opacity: fadeAnim }]} { ...otherProps } />
   );
