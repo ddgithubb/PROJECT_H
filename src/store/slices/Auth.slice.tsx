@@ -23,27 +23,27 @@ const authSlice = createSlice({
     initialState: initialState,
     reducers: {
         setAuth(state, { payload }) {
-            state.refreshToken.token = payload.refreshToken
-            state.refreshToken.expireAt = payload.expireAt
-            state.accessToken = payload.accessToken
+            state.refreshToken.token = payload.refreshToken;
+            state.refreshToken.expireAt = payload.expireAt;
+            state.accessToken = payload.accessToken;
         },
         setSession(state, action) {
-            state.sessionID = action.payload
+            state.sessionID = action.payload;
         },
         clearAuth(state, action) {
-            state.sessionID = ""
-            state.refreshToken.token = ""
-            state.refreshToken.expireAt = 0
-            state.accessToken = ""
+            state.sessionID = "";
+            state.refreshToken.token = "";
+            state.refreshToken.expireAt = 0;
+            state.accessToken = "";
         },
         setVerifying(state, action) {
-            state.verifying = action.payload
+            state.verifying = action.payload;
         },
         setDeviceToken(state, action) {
-            state.deviceToken = action.payload
+            state.deviceToken = action.payload;
         },
         setEmail(state, action) {
-            state.email = action.payload
+            state.email = action.payload;
         }
     }
 });

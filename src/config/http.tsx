@@ -1,10 +1,10 @@
 import * as FD from "form-data";
 import { getState, GlobalState } from "../store/Store";
 
-const DOMAIN: string = "10.0.0.18:8000"; //10.217.70.188:8000
+const DOMAIN: string = "192.168.1.240:8000";
 const VERSION: string = "v1";
 const HOST: string = "http://" + DOMAIN;
-const WSHOST: string = "ws://" + DOMAIN + "/stream";
+const WSHOST: string = "ws://" + DOMAIN + "/socket";
 const URI: string = HOST + "/api/" + VERSION;
 const AUTH_PATH: string =  URI + "/auth";
 const PUBLIC_PATH: string = URI + "/public";

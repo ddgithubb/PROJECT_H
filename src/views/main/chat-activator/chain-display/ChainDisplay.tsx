@@ -90,7 +90,7 @@ export const ChainDisplay = memo(() => {
     }
 
     const onScroll = ({ nativeEvent }: any) => {
-        //console.log("velocity", nativeEvent.velocity.x, "offset", nativeEvent.contentOffset.x, "width", nativeEvent.contentSize.width );
+        console.log("width", PIXEL_WIDTH,"velocity", nativeEvent.velocity.x, "offset", nativeEvent.contentOffset.x, "width", nativeEvent.contentSize.width );
         chainOffsets[currentIndex] = nativeEvent.contentOffset.x;
         if (!thresholdLeft && !thresholdRight && !toNewest) {
             curLength = getVirtualLength();
@@ -120,10 +120,10 @@ export const ChainDisplay = memo(() => {
             } else if (nativeEvent.contentOffset.x == nativeEvent.contentSize.width - PIXEL_WIDTH) { //nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - GET_EXTRA_THRESHOLD - 2 * PIXEL_WIDTH
                 getAscExtraChain();
             }
-            if (!chain.isNewest && chain.spaceBetween == 0 && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH) {
+            if (!chain.isNewest && chain.spaceBetween == 0 && nativeEvent.contentOffset.x >= nativeEvent.contentSize.width - PIXEL_WIDTH - 5) {
                 console.log("isNewest");
                 dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: true }));
-            } else if (chain.isNewest && nativeEvent.contentOffset.x < nativeEvent.contentSize.width - PIXEL_WIDTH) {
+            } else if (chain.isNewest && nativeEvent.contentOffset.x < nativeEvent.contentSize.width - PIXEL_WIDTH - 5) {
                 console.log("isNotNewest");
                 dispatch(userActions.setIsNewest({ index: currentIndex, isNewest: false }));
             }
@@ -230,7 +230,7 @@ export const ChainDisplay = memo(() => {
                         key={currentIndex}
                     >
                         {
-                            !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING + 50} leftPadding={-50} /> : undefined
+                            chain.newestChain.length > 0 && !chain.virtualizedChain[0]?.first && !chain.newestChain[0].first ? <PlaceholderGenerator width={DEFAULT_LEFT_PLACEHOLDER_PADDING + 50} leftPadding={-50} /> : undefined
                         }
                         <View style={{ width: leftVirtualPadding() }} />
                         {

@@ -1,4 +1,4 @@
-import { AUTH_PATH, httpPostOptions, httpPostAuthOptions, PUBLIC_PATH, USER_PATH, httpGetOptions, httpPostAuthFormOptions, httpGetAuthOptions, HEADER_SESSION_ID_NAME, HEADER_REFRESH_TOKEN_NAME, HEADER_REFRESH_TOKEN_EXPIRE_NAME, HEADER_REFRESHED_NAME, HEADER_ACCESS_TOKEN_NAME } from "../config/http";
+import { AUTH_PATH, httpPostOptions, httpPostAuthOptions, PUBLIC_PATH, USER_PATH, httpGetOptions, httpPostAuthFormOptions, httpGetAuthOptions, HEADER_SESSION_ID_NAME, HEADER_REFRESH_TOKEN_NAME, HEADER_REFRESH_TOKEN_EXPIRE_NAME, HEADER_REFRESHED_NAME, HEADER_ACCESS_TOKEN_NAME, httpPutAuthOptions } from "../config/http";
 import { internalError, networkError, somethingWrong } from "./Errors.service";
 import FormData from "form-data";
 import { getState, store } from "../store/Store";
@@ -18,7 +18,6 @@ async function handleResponse(response: Response) {
     } else {
         console.log("headers refreshed", response.headers.get(HEADER_REFRESHED_NAME));
         if (response.headers.get(HEADER_REFRESHED_NAME) == "true") {
-            if (response.headers.get(HEADER_SESSION_ID_NAME) && getState().auth.sessionID != response.headers.get(HEADER_SESSION_ID_NAME)) dispatch(authActions.setSession(response.headers.get(HEADER_SESSION_ID_NAME)));
             dispatch(authActions.setAuth({
                 refreshToken: response.headers.get(HEADER_REFRESH_TOKEN_NAME),
                 expireAt: response.headers.get(HEADER_REFRESH_TOKEN_EXPIRE_NAME),
@@ -54,6 +53,10 @@ export function userPost(endpoint: string, body?: any): Promise<any> {
 
 export function userGet(endpoint: string): Promise<any> {
     return fetchHandler(USER_PATH + endpoint, httpGetAuthOptions())
+}
+
+export function userPut(endpoint: string, body?: any): Promise<any> {
+    return fetchHandler(USER_PATH + endpoint, httpPutAuthOptions(body))
 }
 
 export function userPostForm(endpoint: string, body: FormData): Promise<any> {

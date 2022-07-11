@@ -8,7 +8,7 @@ import { REQUEST_ROW_AMOUNT } from '../../services/Chat.service';
 import { PhotoView } from "../../components/Chat.components";
 import { ActivityIndicator, Keyboard, View } from "react-native";
 import { BlankButton, DangerButton, InfoButton, SuccessButton } from "../../components/Form.components";
-import { accept, getUserByUsername, request, unfriend, unrequest } from "../../services/Social.service";
+import { accept, getUserByUsername, request, unfriend, unrequest } from "../../services/Relation.service";
 import { Friend, Requests, User } from "../../models/User.model";
 import { getState, GlobalState } from "../../store/Store";
 import { useSelector } from "react-redux";
@@ -31,7 +31,7 @@ const RequestItem = memo(({ item, setSearchText }: any) => {
                                 </View>
                             ) : (
                                 <View style={{ width: 90 }}>
-                                    <InfoButton title="Accept" onPress={() => { setSearchText(""), accept(item.RelationID, item.ChainID) }} />
+                                    <InfoButton title="Accept" onPress={() => { setSearchText(""), accept(item.RelationID) }} />
                                 </View>
                             )
                         }
@@ -106,12 +106,12 @@ function SearchedPerson({ searchText, setSearchText, reqItems }: any) {
                     return () => ac.abort();
                 }
             }
-        }, 400)
+        }, 100)
     }, [searchText]);
 
     const requestFriend = () => {
         setRequesting(true);
-        request(user!.UserID, user!.Username).then((res) => {
+        request(user!.UserID).then((res) => {
             if (!res.Error) {
                 console.log(res);
                 setSearchText("");
@@ -133,7 +133,7 @@ function SearchedPerson({ searchText, setSearchText, reqItems }: any) {
 
     const pressAccept = () => {
         setRequesting(true);
-        accept(selectedRequest!.RelationID, selectedRequest!.ChainID).then((res) => {
+        accept(selectedRequest!.RelationID).then((res) => {
             if (!res.Error) {
                 console.log(res);
                 setSearchText("");

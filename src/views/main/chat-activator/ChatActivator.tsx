@@ -5,7 +5,7 @@ import { memo } from 'react';
 import { getState, GlobalState } from '../../../store/Store';
 import { useSelector } from 'react-redux';
 import { ChainDisplay } from './chain-display/ChainDisplay';
-import { STATIC_ACTIVATOR_HEIGHT, CHAIN_HEIGHT } from '../../../config/constants';
+import { STATIC_ACTIVATOR_HEIGHT, VISIBLE_CHAIN_HEIGHT } from '../../../config/constants';
 import { InputPanel } from './input-panel/InputPanel';
 import { MediaPanel } from './media-panel/MediaPanel';
 
@@ -18,9 +18,7 @@ function ChatActivator() {
     const myUserID = useSelector(({ user }: GlobalState) => user.userID );
     const [ loading, setLoading ] = useState(true);
     const transformAnim = useRef(new Animated.Value(STATIC_ACTIVATOR_HEIGHT)).current;
-    const chainAnim = useRef(new Animated.Value(CHAIN_HEIGHT)).current;
-
-    console.log("CHAT ACTIVATOR HAS RENDERED!!!!!!", selectedIndex, currentIndex);
+    const chainAnim = useRef(new Animated.Value(VISIBLE_CHAIN_HEIGHT)).current;
     
     useEffect(() => {
         console.log("SELECTED INDEX")
@@ -46,50 +44,40 @@ function ChatActivator() {
 
     const onSelected = async () => {
         Animated.timing(
-        transformAnim,
-        {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-            easing: Easing.out(Easing.exp)
-        }
+            transformAnim,
+            {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+                easing: Easing.out(Easing.exp) 
+            }
         ).start();
         Animated.spring(
-        chainAnim,
-        {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 5
-        }
+            chainAnim,
+            {
+                toValue: 0,
+                useNativeDriver: true,
+                bounciness: 5
+            }
         ).start();
-        //AUDIO_REPLACE_ID
-        // const { status: existingStatus } = await Audio.getPermissionsAsync();
-        // let finalStatus = existingStatus;
-        // if (existingStatus !== 'granted') {
-        //     const { status } = await Audio.requestPermissionsAsync();
-        //     finalStatus = status;
-        // }
-        // if (finalStatus !== 'granted') {
-        //     onUnselected();
-        // }
     }
 
     const onUnselected = async () => {
         Animated.timing(
-        transformAnim,
-        {
-            toValue: STATIC_ACTIVATOR_HEIGHT,
-            duration: 200,
-            useNativeDriver: true,
-        }
+            transformAnim,
+            {
+                toValue: STATIC_ACTIVATOR_HEIGHT,
+                duration: 200,
+                useNativeDriver: true,
+            }
         ).start();
         Animated.timing(
-        chainAnim,
-        {
-            toValue: CHAIN_HEIGHT,
-            duration: 200,
-            useNativeDriver: true
-        }
+            chainAnim,
+            {
+                toValue: VISIBLE_CHAIN_HEIGHT,
+                duration: 200,
+                useNativeDriver: true
+            }
         ).start();  
     }
 

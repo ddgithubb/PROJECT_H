@@ -1,7 +1,8 @@
+import { AuthState } from "../models/Auth.model";
 import { authActions, authenticatedAction } from "../store/slices/Auth.slice";
 import { store, getState } from "../store/Store";
 import { encryptPassword } from "./Encryption.service";
-import { authPost } from "./Http.service";
+import { authPost, userGet } from "./Http.service";
 
 const dispatch = store.dispatch;
 
@@ -37,7 +38,17 @@ export function resendEmail(): Promise<any> {
     })
 }
 
-export function logOut() {
+export function authorize() {
+    let auth: AuthState = getState().auth;
+    if (auth.refreshToken.token != "" && auth.refreshToken.expireAt != 0 && auth.accessToken != "" && auth.sessionID != ""){
+        console.log("authorizing")
+        return userGet("/authorize")
+    } else {
+        logout();
+    }
+}
+
+export function logout() {
     dispatch(authenticatedAction.setAuthenticated(false));
     dispatch(authActions.clearAuth(null))
 }

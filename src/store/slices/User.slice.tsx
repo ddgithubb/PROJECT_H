@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Message, Chain, UserState } from "../../models/User.model";
+import { Message, Chain, UserState, Requests } from "../../models/User.model";
 import { EXTRA_CHAIN_LENGTH, MAX_SAVED_CHAIN_LENGTH, MAX_VIRTUAL_CHAIN_LENGTH, DEFAULT_LEFT_PLACEHOLDER_PADDING, MESSAGE_MAX_WIDTH, MESSAGE_SPACER, DATE_INDICATOR_WIDTH, CHAIN_METERS_WIDTH, DISPLAY_DURATION_WIDTH  } from '../../config/constants';
 import { MESSAGES_TO_LOAD, NO_LAST_SEEN_OFFSET } from "../../services/Chat-activator.service";
 import { HALF_PIXEL_WIDTH, PIXEL_WIDTH } from "../../config/dimensions";
@@ -39,17 +39,18 @@ const userSlice = createSlice({
         setFriends(state, { payload }) {
             state.relations.Friends = payload;
             //////////////////////////////////////////
-            for (let i = 0; i < 100; i++) {
-                state.relations.Friends.push({
-                    Username: "TEST",
-                    RelationID: i.toString(),
-                    ChainID: "",
-                    LastSeen: 0,
-                    LastRecv: 0,
-                    Key: i + 1,
-                    newMessages: 0,
-                });
-            }
+            // for (let i = 0; i < 100; i++) {
+            //     state.relations.Friends.push({
+            //         Username: "TEST",
+            //         RelationID: i.toString(),
+            //         ChainID: "",
+            //         Created: 0,
+            //         LastSeen: 0,
+            //         LastRecv: 0,
+            //         Key: i + 1,
+            //         newMessages: 0,
+            //     });
+            // }
             //////////////////////////////////////////////////
         },
         setRequests(state, { payload }) {
@@ -57,24 +58,22 @@ const userSlice = createSlice({
         },
         addRequest(state, { payload }) {
             state.relations.Requests.splice(1, 0, {
-                RelationID: payload.reqID,
+                RelationID: payload.relationID,
                 Username: payload.username,
-                ChainID: payload.chainID,
                 Requested: false
             })
         },
         addRequested(state, { payload }) {
             state.relations.Requests.push({
-                RelationID: payload.reqID,
+                RelationID: payload.relationID,
                 Username: payload.username,
-                ChainID: payload.chainID,
                 Requested: true
             })
         },
         acceptRequest(state, { payload }) {
-            let user;
+            let user: Requests;
             for (const [index, req] of state.relations.Requests.entries()) {
-                if (req.RelationID == payload) {
+                if (req.RelationID == payload.relationID) {
                     user = req;
                     state.relations.Requests.splice(index, 1);
                     break;
@@ -84,9 +83,10 @@ const userSlice = createSlice({
                 state.relations.Friends.push({
                     RelationID: user.RelationID,
                     Username: user.Username,
-                    ChainID: user.ChainID,
-                    LastSeen: Date.now(),
-                    LastRecv: Date.now(),
+                    ChainID: payload.chainID,
+                    Created: payload.created,
+                    LastSeen: payload.created,
+                    LastRecv: payload.created,
                     Key: state.relations.Friends.length,
                     newMessages: 0,
                 });
@@ -108,10 +108,32 @@ const userSlice = createSlice({
                 }
             }
         },
+        removeRelation(state, { payload }) {
+            let found = false;
+            for (const [index, req] of state.relations.Requests.entries()) {
+                if (req.RelationID == payload) {
+                    state.relations.Requests.splice(index, 1);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                for (const [index, req] of state.relations.Friends.entries()) {
+                    if (req.RelationID == payload) {
+                        state.relations.Friends.splice(index, 1);
+                        break;
+                    }
+                }
+            }
+        },
         newChain(state, { payload }) {
+
             if (!payload.chain) return;
+
             state.curChainsIndex.push(payload.index);
+
             let chain = state.chains[payload.index] = { 
+                chainID: state.relations.Friends[payload.index].ChainID,
                 virtualizedChain: [], 
                 newestChain: parseChain(payload.chain, 1, Date.now()), 
                 spaceBetween: 0, 
@@ -119,7 +141,13 @@ const userSlice = createSlice({
                 virtualIndex: 0,
                 initOffset: -1,
             };
-            //console.log(chain.newestChain);
+
+            if (chain.newestChain.length == 0) {
+                chain.isNewest = true;
+                chain.initOffset = 0;
+                return
+            }
+
             for (let i = 0; i < chain.newestChain.length; i++) {
                 if (chain.newestChain[i].Created == state.relations.Friends[payload.index].LastSeen) {
                     chain.virtualIndex = i;
@@ -129,39 +157,66 @@ const userSlice = createSlice({
                     break;
                 }
             }
+
             if (chain.initOffset == -1) {
                 for (let i = 0; i < chain.newestChain.length; i++) { 
-                    if (chain.newestChain[i].offset + chain.newestChain[i].totalWidth > chain.initOffset + HALF_PIXEL_WIDTH) {
+                    if (chain.newestChain[i].offset + chain.newestChain[i].totalWidth > HALF_PIXEL_WIDTH) {
                         chain.virtualIndex = i;
                         state.relations.Friends[payload.index].newMessages = MAX_SAVED_CHAIN_LENGTH;
                         break;
                     }
                 }
             }
+
             if (chain.newestChain.length < MAX_SAVED_CHAIN_LENGTH) {
+
                 chain.newestChain[0].first = true;
+
+                if (chain.newestChain[chain.newestChain.length - 1].offset + chain.newestChain[chain.newestChain.length - 1].totalWidth <= PIXEL_WIDTH) {
+                    state.chains[payload.index].isNewest = true;
+                    state.chains[payload.index].initOffset = 0;
+                }
+
             }
+
         },
         addMessage(state, { payload }) {
             let chain = state.chains[payload.index];
             if (!chain) return;
             pushMessage(chain, payload);
             if (payload.chain.UserID == state.userID) {
-                state.relations.Friends[payload.index].LastSeen = payload.lastSeen
+                state.relations.Friends[payload.index].LastSeen = payload.chain.Created
                 state.relations.Friends[payload.index].newMessages = 0;
             }
         },
-        addMessageByUserID(state, { payload }) {
+        // addMessageByUserID(state, { payload }) {
+        //     for (const friend of state.relations.Friends) {
+        //         if (friend.RelationID == payload.UserID) {
+        //             let chain = state.chains[friend.Key];
+        //             if (!chain) return;
+        //             pushMessage(chain, payload);
+        //             friend.LastRecv = payload.Created;
+        //             state.relations.Friends[payload.index].newMessages++;
+        //             break;
+        //         }
+        //     }
+        // },
+        addMessageByChainID(state, { payload }) {
             for (const friend of state.relations.Friends) {
-                if (friend.RelationID == payload.UserID) {
+                if (friend.ChainID == payload.chainID) {
                     let chain = state.chains[friend.Key];
                     if (!chain) return;
                     pushMessage(chain, payload);
-                    friend.LastRecv = payload.Created;
-                    state.relations.Friends[payload.index].newMessages++;
+                    if (payload.chain.UserID == state.userID) {
+                        friend.LastSeen = payload.chain.Created;
+                        friend.newMessages = 0;
+                    } else {
+                        friend.LastRecv = payload.chain.Created;
+                        friend.newMessages++;
+                    }
                     break;
                 }
-            }
+            }  
         },
         setSeen(state, { payload }) {
             if (!state.chains[payload.index]) return;
@@ -185,46 +240,6 @@ const userSlice = createSlice({
                 }
             }
         },
-        setAction(state, { payload }) {
-            if (!state.chains[payload.index]) return;
-            let found = false;
-            for (const message of state.chains[payload.index].newestChain) {
-                if (message.MessageID == payload.messageID) {
-                    message.Action = payload.actionID;
-                    found = true;
-                    break;
-                }
-            }
-            if (found) return;
-            for (const message of state.chains[payload.index].virtualizedChain) {
-                if (message.MessageID == payload.messageID) {
-                    message.Action = payload.actionID;
-                    break;
-                }
-            }
-        },
-        setActionByID(state, { payload }) {
-            for (const friend of state.relations.Friends) {
-                if (friend.RelationID == payload.UserID) {
-                    let found = false;
-                    for (const message of state.chains[friend.Key].newestChain) {
-                        if (message.MessageID == payload.MessageID) {
-                            message.Action = payload.ActionID;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) return;
-                    for (const message of state.chains[friend.Key].virtualizedChain) {
-                        if (message.MessageID == payload.MessageID) {
-                            message.Action = payload.ActionID;
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        },
         addDescExtraChain(state, { payload }) {
             let chain = state.chains[payload.index];
             if (!payload.chain) {
@@ -232,8 +247,7 @@ const userSlice = createSlice({
                 return 
             };
 
-            let chainPayload = 
-                parseChain(
+            let chainPayload = parseChain(
                     payload.chain, 
                     MESSAGES_TO_LOAD - (payload.chain.length % MESSAGES_TO_LOAD) + (chain.virtualizedChain[0] || chain.newestChain[0]).key, 
                     (chain.virtualizedChain[0] || chain.newestChain[0]).Created
@@ -257,8 +271,7 @@ const userSlice = createSlice({
             let chain = state.chains[payload.index];
             if (!chain || !payload.chain) return;
 
-            let chainPayload = 
-                parseChain(
+            let chainPayload = parseChain(
                     payload.chain, 
                     chain.virtualizedChain[chain.virtualizedChain.length - 1].key + 1,
                     payload.chain.length < EXTRA_CHAIN_LENGTH ? chain.newestChain[0].Created : undefined,
@@ -321,10 +334,11 @@ export function parseChain(chain: any[], startKey: number, rightAdjacentCreated?
             MessageID: chain[i].MessageID,
             UserID: chain[i].UserID,
             Created: chain[i].Created,
+            Expires: chain[i].Expires,
+            Type: chain[i].Type,
             Duration: chain[i].Duration,
             Display: bytes,
             Seen: chain[i].Seen,
-            Action: chain[i].Action,
             totalWidth: width,
             dateIndicatorWidth: indicatorWidth,
             offset: startOffset + totalNewWidth,
@@ -345,19 +359,21 @@ function pushMessage(chain: Chain, payload: any) {
     for (var i = 0; i < payload.chain.Display.length; i++) {
         bytes[i] = payload.chain.Display.charCodeAt(i);
     }
-    let key = chain.newestChain[chain.newestChain.length - 1].key + 1;
+    let key = chain.newestChain.length == 0 ? 1 : chain.newestChain[chain.newestChain.length - 1].key + 1;
     let length = chain.newestChain.push({
         MessageID: payload.chain.MessageID,
         UserID: payload.chain.UserID,
         Created: payload.chain.Created,
+        Expires: payload.chain.Expires,
+        Type: payload.chain.Type,
         Duration: payload.chain.Duration,
         Display: bytes,
         Seen: payload.chain.Seen,
-        Action: payload.chain.Action,
         totalWidth: calculateAudioWidth(bytes.length),
         dateIndicatorWidth: 0,
         offset: 0,
         key: (key > MESSAGES_TO_LOAD ? 1 : key),
+        first: chain.newestChain.length == 0,
     });
     
     if (length > MAX_SAVED_CHAIN_LENGTH) {

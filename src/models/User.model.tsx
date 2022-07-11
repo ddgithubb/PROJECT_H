@@ -12,7 +12,14 @@ export interface UserState {
     currentUserKey: number;
 }
 
+export interface Relations {
+    Friends: Friend[];
+    Requests: Requests[];
+    Requested: Requests[];
+}
+
 export interface Chain {
+    chainID: string;
     newestChain: Message[];
     virtualizedChain: Message[];
     spaceBetween: number;
@@ -30,7 +37,6 @@ export interface User {
 export interface Requests {
     Username: string;
     RelationID: string;
-    ChainID: string;
     Requested: boolean;
 }
 
@@ -38,6 +44,7 @@ export interface Friend {
     Username: string;
     RelationID: string;
     ChainID: string;
+    Created: number;
     LastSeen: number;
     LastRecv: number;
     Key: number;
@@ -48,10 +55,11 @@ export interface Message {
     MessageID: string;
     UserID: string;
     Created: number;
-    Duration: number;
+    Expires: number;
+    Type: number;
     Seen: boolean;
-    Action: number;
     Display: number[];
+    Duration: number;
     totalWidth: number;
     dateIndicatorWidth: number;
     offset: number;

@@ -1,42 +1,43 @@
 import { AuthState } from "../models/Auth.model";
+import { Relations } from "../models/User.model";
 import { authActions, authenticatedAction } from "../store/slices/Auth.slice";
 import { userActions } from "../store/slices/User.slice";
 import { getState, store } from "../store/Store";
 import { userGet } from "./Http.service";
-import { initUserData } from "./User.service";
-import { StartWSConnection } from "./Websocket.service";
+import { setFriends, setRelations, setRequests } from "./User.service";
+import { openWSGate, StartWSConnection } from "./Websocket.service";
 
 const dispatch = store.dispatch;
 
-export async function reInitializeApp() {
-    await initializeApp(await getInitialize());
-}
-
-export async function initializeApp(res: any) {
-    if (res && !res.Error) {
-        initData(res);
-        await StartWSConnection();
+export async function initializeApp() {
+    let auth = getState().auth;
+    if (auth.refreshToken.token != "" && auth.refreshToken.expireAt != 0 && auth.accessToken != "" && auth.sessionID != "") {
+        let refresh = await StartWSConnection();
+        if (refresh) {
+            await initData();
+        }
     }
 }
 
 export async function updateApp() {
-    initData(await getInitialize());
+    //Refactor
+    await initData();
 }
 
-export function initData(res: any) {
+export async function updateRelations() {
+    userGet("/relation").then((res) => {
+        if (res && !res.Error) {
+            setRelations(res);
+        }
+    })
+}
+
+export async function initData() {
+    let res = await userGet("/initialize");
     if (res && !res.Error) {
         dispatch(authenticatedAction.setAuthenticated(true));
         dispatch(userActions.setInitialState(res));
-        initUserData(res);
-    }
-}
-
-export function getInitialize() {
-    let auth: AuthState = getState().auth;
-    if (auth.refreshToken.token != "" && auth.refreshToken.expireAt != 0 && auth.accessToken != "" && auth.sessionID != ""){
-        console.log("initializing")
-        return userGet("/initialize")
-    } else {
-        dispatch(authActions.clearAuth(null))
+        setRelations(res.Relations)
+        openWSGate();
     }
 }

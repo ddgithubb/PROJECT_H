@@ -39,11 +39,12 @@ export default function Chat({ navigation }: any) {
 
     const displayFriends = useMemo<Friend[]>(() => 
     {
+        console.log("DISPLAY FRIENDS", displayFriends, friends)
         let res: Friend[] = displayFriends;
         if (!res) {
             if (friends) {
                 res = friends.slice();
-                res.sort((a, b) => b.LastRecv - a.LastRecv);
+                //res.sort((a, b) => b.LastRecv - a.LastRecv);
             }
         } else if (displayFriends.length != friends.length) {
             let diff = friends.length - displayFriends.length;
@@ -52,7 +53,7 @@ export default function Chat({ navigation }: any) {
                     res.unshift(friends[i]);
                 }
             } else {
-                //DELETION, not splice
+                //MARK DELETION, not splice (because need to keep in key)
             }
         } else if (friends.length > 1) {
             for (let i = 1; i < displayFriends.length; i++) {
@@ -114,7 +115,7 @@ export default function Chat({ navigation }: any) {
     return (
         <SafeAreaView style={{ width: "100%", flex: 1 }}>
             <Header>
-                <HeaderViews style={{ alignItems: "flex-start" }}><Subtitle>|Profile|</Subtitle></HeaderViews>
+                <HeaderViews style={{ alignItems: "flex-start" }}><Subtitle>Profile</Subtitle></HeaderViews>
                 <HeaderViews style={{ alignItems: "center", flexBasis: 110 }}><Heading style={{ fontSize: 25, fontWeight:"bold" }}>PROJECT H</Heading></HeaderViews>
                 <HeaderViews style={{ alignItems: "flex-end" }}><ClickView action={() => navigation.navigate("Requests")}><Icon source={ SEARCH_MORE_ICON } dimensions={30}/></ClickView></HeaderViews>
             </Header>

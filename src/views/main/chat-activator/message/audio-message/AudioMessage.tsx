@@ -17,7 +17,7 @@ import { formatDateIndicator, formatTime, millisToMinutesAndSeconds } from '../.
 import { useDispatch, useSelector } from 'react-redux';
 import { userActions } from '../../../../../store/slices/User.slice';
 import { mediaActions } from '../../../../../store/slices/Media.slice';
-import { CHAIN_HEIGHT, MESSAGE_HEIGHT, MESSAGE_SPACER } from '../../../../../config/constants';
+import { VISIBLE_CHAIN_HEIGHT, MESSAGE_HEIGHT, MESSAGE_SPACER } from '../../../../../config/constants';
 import { MEDIA_CURRENT_POS_EVENT_EMITTER, CHAIN_METER_AMOUNTS } from '../../../../../services/Chat-activator.service';
 import { getState, GlobalState } from '../../../../../store/Store';
 import { Message } from '../../../../../models/User.model';
@@ -62,44 +62,44 @@ export const AudioMessage = memo(({ item, selected, isLastItem, lastSeen }:
         }
     }, [item.MessageID]);
 
-    useEffect(() => {
-        Animated.timing(
-            actionTransformYAnim.current, 
-            {
-                toValue: 0,
-                duration: 50,
-                useNativeDriver: true,
-            }
-        ).start();
-        Animated.timing(
-            actionScaleAnim.current,
-            {
-                toValue: 0,
-                duration: 80,
-                useNativeDriver: true,
-            }
-        ).start(() => {
-            if (item.Action != 0) {
-                setCurActionID(item.Action);
-                Animated.timing(
-                    actionScaleAnim.current,
-                    {
-                        toValue: 1,
-                        duration: 100,
-                        useNativeDriver: true,
-                    }
-                ).start();
-                Animated.timing(
-                    actionTransformYAnim.current, 
-                    {
-                        toValue: -10,
-                        duration: 50,
-                        useNativeDriver: true,
-                    }
-                ).start();
-            }
-        });
-    }, [item.Action]);
+    // useEffect(() => {
+    //     Animated.timing(
+    //         actionTransformYAnim.current, 
+    //         {
+    //             toValue: 0,
+    //             duration: 50,
+    //             useNativeDriver: true,
+    //         }
+    //     ).start();
+    //     Animated.timing(
+    //         actionScaleAnim.current,
+    //         {
+    //             toValue: 0,
+    //             duration: 80,
+    //             useNativeDriver: true,
+    //         }
+    //     ).start(() => {
+    //         if (item.Action != 0) {
+    //             setCurActionID(item.Action);
+    //             Animated.timing(
+    //                 actionScaleAnim.current,
+    //                 {
+    //                     toValue: 1,
+    //                     duration: 100,
+    //                     useNativeDriver: true,
+    //                 }
+    //             ).start();
+    //             Animated.timing(
+    //                 actionTransformYAnim.current, 
+    //                 {
+    //                     toValue: -10,
+    //                     duration: 50,
+    //                     useNativeDriver: true,
+    //                 }
+    //             ).start();
+    //         }
+    //     });
+    // }, [item.Action]);
 
     useEffect(() => {
         return () => {
@@ -314,16 +314,16 @@ export const AudioMessage = memo(({ item, selected, isLastItem, lastSeen }:
                     </View>
                 : undefined
             }
-            <Animated.View style={{ position: "absolute", left: 5, transform: [{ scale: actionScaleAnim.current }, { translateY: actionTransformYAnim.current }] }}>
+            {/* <Animated.View style={{ position: "absolute", left: 5, transform: [{ scale: actionScaleAnim.current }, { translateY: actionTransformYAnim.current }] }}>
                 <Icon source={ACTIONS_RESOURCE[curActionID > 0 && curActionID < ACTIONS_RESOURCE.length ? curActionID - 1 : 0]} /> 
-            </Animated.View>
+            </Animated.View> */}
         </View>
     )
 }, areEqual);
 
 function areEqual(prevProps: any, nextProps: any) {
     return prevProps.item.MessageID == nextProps.item.MessageID && 
-        prevProps.item.Action == nextProps.item.Action && 
+        prevProps.item.Reply == nextProps.item.Reply && 
         prevProps.selected == nextProps.selected && 
         prevProps.selected == nextProps.selected && 
         prevProps.item.Seen == nextProps.item.Seen && 

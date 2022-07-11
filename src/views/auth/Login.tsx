@@ -46,7 +46,8 @@ export default function Login({ navigation }: any) {
                     setErrorText("Password is incorrect!");
                 }
             } else {
-                initializeApp(res);
+                dispatch(authActions.setSession(res.SessionID));
+                initializeApp();
             }
         })
     }

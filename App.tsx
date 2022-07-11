@@ -9,9 +9,9 @@ import { PersistGate } from 'redux-persist/lib/integration/react';
 import Auth from './src/Auth';
 import SplashScreen from 'react-native-splash-screen'
 import { fatalError } from './src/services/Errors.service';
-import { reInitializeApp } from './src/services/Initialize.service';
+import { initializeApp } from './src/services/Initialize.service';
 import { appActions } from './src/store/slices/App.slice';
-import { getWebsocketState } from './src/services/Websocket.service';
+import { closeWSGate, getWebsocketState, openWSGate } from './src/services/Websocket.service';
 import { authActions } from './src/store/slices/Auth.slice';
 import Orientation from 'react-native-orientation-locker';
 
@@ -51,7 +51,7 @@ function AppCondition() {
 
   return (
     authenticated ? (
-      permitted ? <Main /> : undefined //TODO: Eventually put the not permitted view here
+      permitted ? <Main /> : null //TODO: Eventually put the not permitted view here
     ) : (
       <Auth />
     )
@@ -74,7 +74,13 @@ function AppGate() {
   const _handleAppStateChange = (nextAppState: AppStateStatus) => {
     if (getState().app.state.match(/inactive|background/) && nextAppState === 'active') {
       let state = getWebsocketState()
-      if (state == 2 || state == 3) reInitializeApp()
+      if (state == 2 || state == 3) initializeApp()
+    }
+
+    if (nextAppState == 'active') {
+      openWSGate();
+    } else {
+      closeWSGate();
     }
 
     dispatch(appActions.setAppState(nextAppState))
@@ -92,7 +98,7 @@ function AppGate() {
           // }
         }
 
-        await reInitializeApp();
+        await initializeApp();
 
         setGateLifted(true);
         SplashScreen.hide();

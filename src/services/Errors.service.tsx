@@ -1,7 +1,7 @@
 import { authActions, authenticatedAction, resetAuth } from '../store/slices/Auth.slice';
 import { errorActions } from '../store/slices/Error.slice';
 import { store, getState } from '../store/Store';
-import { reInitializeApp } from './Initialize.service';
+import { initializeApp } from './Initialize.service';
 
 const dispatch = store.dispatch;
 
@@ -15,7 +15,7 @@ export async function networkError(err: any) {
         //Offline dark/grey (in view)
     } else {
         dispatch(errorActions.setNetworkErr(true))
-        await reInitializeApp();
+        await initializeApp();
         //"Network Error / trying to reconnect" red (in view)
     }
 }
